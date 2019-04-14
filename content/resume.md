@@ -12,8 +12,7 @@ Passionate about all things related to Unix like systems, I&#x27;ve started usin
 
 I help customers run large-scale, reliable applications in the Cloud by working with engineers and architects to design, build, optimize, and operate infrastructure. My specialties are systems automation, security, and migrating workloads to container-based deployments. Interested in Continuous Integration, Containers, Docker, Kubernetes and similar technologies. 12Factor Evangelist, proponent of Infrastructure as Code, Continuous Delivery, and Self-Documenting systems
 
-I speak native German, Italian and fluent English.  
-Actually I'm only interested in remote working jobs.
+I speak native German, Italian and fluent English. Actually I'm only interested in remote working jobs.
 
 ---
 
