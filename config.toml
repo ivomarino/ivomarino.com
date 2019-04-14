@@ -1,0 +1,26 @@
+baseurl = "https://ivomarino.com/"
+languageCode = "en-US"
+title = "ivomarino.com"
+paginate = 4
+DisqusShortname = "ivomarino"
+Copyright = "All rights reserved - 2019"
+theme = "casper"
+
+[params]
+  description = "a DevOps Engineer."
+  cover = "img/main-01.jpg"
+
+  author = "Ivo Marino"
+  authorlocation = "Baar, Zug"
+  authorwebsite = "https://ivomarino.com"
+  bio = "Husband, DevOps Engineer, remote freelancer."
+
+  # logo = "images/logo.png"
+  googleAnalyticsUserID = "UA-27494094-1 "
+
+  # Optional RSS-Link, if not provided it defaults to the standard index.xml
+  githubName = "ivomarino"
+  twitterName = "ivomarino"
+
+  # set true if you are not proud of using Hugo (true will hide the footer note "Proudly published with HUGO.....")
+  hideHUGOSupport = false
