@@ -11,9 +11,12 @@ footer = false
 
 Feel free to drop me a line.
 
-##### Phone & mail
+##### Collaboration
+
+If you are looking for a technical advisor on topics like DevOps, Docker, Kubernetes head over to [Clarity.fm](https://clarity.fm/ivomarino) and schedule a call with me. Let's plan together all further steps to get game changing technologies straight into your business.
+
+##### Mail
 <ul class="contact">
-    <li><i class="icon-phone"></i>+41 76 352 9002</li>
     <li><i class="icon-mail"></i><a href="mailto:ivo@ivomarino.com">ivo@ivomarino.com</a></li>
 </ul>
 
