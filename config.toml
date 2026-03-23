@@ -25,5 +25,17 @@ theme = "casper"
   # set true if you are not proud of using Hugo (true will hide the footer note "Proudly published with HUGO.....")
   hideHUGOSupport = false
 
+[[menu.main]]
+  name = "About"
+  url = "/about"
+
+[[menu.main]]
+  name = "Resume"
+  url = "/resume"
+
+[[menu.main]]
+  name = "Contact"
+  url = "/contact"
+
 [markup.goldmark.renderer]
   unsafe = true
