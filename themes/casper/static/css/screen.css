@@ -1525,6 +1525,10 @@ body:not(.post-template) .post-title {
 
 @media only screen and (max-width: 900px) {
 
+    .inner {
+        margin: 100px 0 6% 20%;
+    }
+
     blockquote {
         margin-left: 0;
     }
@@ -1644,6 +1648,10 @@ body:not(.post-template) .post-title {
    ========================================================================== */
 
 @media only screen and (max-width: 500px) {
+
+    .inner {
+        margin: 50px 0 6% 20%;
+    }
 
     .main-header {
         margin-bottom: 15px;
