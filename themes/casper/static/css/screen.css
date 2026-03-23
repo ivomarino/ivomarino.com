@@ -842,22 +842,20 @@ body.nav-opened .nav {
     box-sizing: border-box;
     display: inline-block;
     float: right;
-    height: 40px;
-    padding: 0 18px;
-    border: rgba(255,255,255,0.8) 2px solid;
+    height: 38px;
+    padding: 0 15px;
+    border: #bfc8cd 1px solid;
     opacity: 1;
-    color: #fff;
+    color: #9EABB3;
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
-    line-height: 36px;
+    line-height: 35px;
     white-space: nowrap;
     border-radius: 3px;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.5);
     transition: all 0.5s ease;
     margin-left: 10px;
-    margin-right: 10px;
-    cursor: pointer;
 }
 .menu-button:focus {
     outline: 0;
@@ -902,9 +900,7 @@ body.nav-opened .menu-button .word {
 }
 
 .main-nav .menu-button {
-    border-color: rgba(255,255,255,0.8);
-    background: rgba(0,0,0,0.7) !important;
-    color: #fff !important;
+    border-color: rgba(255,255,255,0.6);
 }
 
 .main-nav a:hover {
