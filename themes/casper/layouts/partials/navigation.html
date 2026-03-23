@@ -12,9 +12,9 @@
             </li>
         {{end}}
     </ul>
-    
+
     {{ if .Site.Params.RSSLink}}
-    <a class="subscribe-button icon-feed" href="{{.Site.Params.RSSLink }}">Subscribe</a> </div>
+    <a class="subscribe-button icon-feed" href="{{.Site.Params.RSSLink }}">Subscribe</a>
     {{else}}
     <a class="subscribe-button icon-feed" href="{{ .Site.BaseURL }}index.xml">Subscribe</a>
     {{end}}
