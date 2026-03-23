@@ -936,7 +936,7 @@ body.nav-opened .menu-button .word {
     font-weight: 600;
     /**font-family: "Merriweather", serif;**/
     letter-spacing: 0.01rem;
-    color: rgba(255,255,255,255);
+    color: #fff;
 }
 
 .no-cover.main-header {
