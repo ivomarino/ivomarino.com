@@ -167,6 +167,9 @@ table { border-collapse: collapse; border-spacing: 0; }
 }
 .icon-home:before {
   content: "\f409";
+  display: inline-block;
+  transform: scale(1.4);
+  transform-origin: center;
 }
 .icon-linkedin:before {
   content: "\f207";
