@@ -6,6 +6,7 @@ slug = "mysql-scaling-beyond-k8s"
 tags = ["kubernetes", "database", "scaling", "mysql", "backups", "xtrabackup", "operations"]
 summary = "How a fintech database grew from GB to TB in Kubernetes, why backups failed, and the backup solution we built to escape."
 comments = true
+image = "img/head-03.jpg"
 +++
 
 We ran MySQL in Kubernetes for years. It worked great.
