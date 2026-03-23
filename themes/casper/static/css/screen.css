@@ -536,7 +536,26 @@ body.nav-opened .site-wrapper {
     /* text-align: center; */
     background: #222 no-repeat center center;
     background-size: cover;
+    background-position: center center;
+    background-attachment: local;
     overflow: hidden;
+}
+
+/* Dark overlay for text readability on any image */
+.main-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(0,0,0,0.3) 0%,
+        rgba(0,0,0,0.5) 50%,
+        rgba(0,0,0,0.7) 100%
+    );
+    z-index: 1;
 }
 
 .main-header .inner {
@@ -1126,6 +1145,7 @@ body:not(.post-template) .post-title {
     max-width: 100%;
     height: auto;
     padding: 0.6em 0;
+    margin: 2rem auto;
     /* Centers an image by (1) pushing its left edge to the
        center of its container and (2) shifting the entire image
        in the opposite direction by half its own width.
@@ -1135,6 +1155,9 @@ body:not(.post-template) .post-title {
     -webkit-transform: translateX(-50%); /* for Safari and iOS */
     -ms-transform: translateX(-50%); /* for IE9 */
     transform: translateX(-50%);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    object-fit: contain;
 }
 
 /* The author credit area after the post */
@@ -1217,8 +1240,8 @@ body:not(.post-template) .post-title {
    ========================================================================== */
 
 .post-head.main-header {
-    height: 65vh;
-    min-height: 180px;
+    height: 50vh;
+    min-height: 300px;
 }
 
 .no-cover.post-head.main-header {
