@@ -6,7 +6,9 @@ share = false
 slug = "relaunch"
 tags = ["relaunch"]
 title = "Relaunch"
+description = "The relaunch of ivomarino.com and the journey to share experiences about DevOps, technology, and human aspects of working in tech."
 image = "img/head-02.jpg"
+summary = "Why I relaunched this site and what I plan to share about working in tech and DevOps."
 +++
 
 It was time to relaunch my site.

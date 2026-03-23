@@ -1,8 +1,9 @@
 +++
 date = "2019-04-13T11:06:24-07:00"
-comments = false 
-draft = false 
+comments = false
+draft = false
 title = "About me"
+description = "Ivo Marino - DevOps Engineer with experience in cloud infrastructure, Kubernetes, Docker, and open-source automation tools."
 image = "img/head-01.jpg"
 share = false
 footer = false

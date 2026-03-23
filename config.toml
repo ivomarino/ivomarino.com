@@ -7,7 +7,7 @@ Copyright = "All rights reserved - 2019"
 theme = "casper"
 
 [params]
-  description = "a DevOps Engineer."
+  description = "DevOps Engineer sharing insights on Kubernetes, databases, and infrastructure automation."
   cover = "img/main-01.jpg"
 
   author = "Ivo Marino"

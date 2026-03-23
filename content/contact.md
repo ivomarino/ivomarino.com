@@ -1,8 +1,9 @@
 +++
-comments = false 
+comments = false
 date = "2019-04-13T12:12:20-07:00"
 draft = false
 share = false
+description = "Get in touch with Ivo Marino for DevOps consulting, Kubernetes architecture, or technical advice on cloud infrastructure."
 image = "img/head-05.jpg"
 slug = "contact"
 title = "Contact"
