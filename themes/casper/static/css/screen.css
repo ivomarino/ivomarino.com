@@ -496,14 +496,13 @@ margin on the iframe, cause it breaks stuff. */
     max-width: 710px;
     /* margin: 0 auto; */
     /* top, right, bottom, left */
-    margin: 0 0 6% 20%;
+    margin: 200px 0 6% 20%;
 }
 
 /* Centres vertically yo. (IE8+) */
 .vertical {
     display: table-cell;
     vertical-align: bottom;
-    padding-bottom: 180px;
 }
 
 /* Wraps the main content & footer */
