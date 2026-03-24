@@ -19,6 +19,7 @@
               <a class="menu-button icon-feed" href="{{ .Site.BaseURL }}index.xml">&nbsp;&nbsp;Subscribe</a>
             {{end}}
         {{end}}
+        {{ partial "theme-toggle.html" . }}
     </nav>
     <div class="vertical">
         <div class="main-header-content inner">
@@ -29,8 +30,6 @@
             {{end}}
             &nbsp;
             {{ if .Site.Params.twitterName }}
-                <a class="bloglogo" href="https://twitter.com/{{ .Site.Params.twitterName }}">
-                    <span class="icon-twitter" style="color:white;font-size:2em"></span>
                 </a>
             {{end}}
             <h1 class="page-title">{{ .Site.Title }}</h1>
