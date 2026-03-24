@@ -14,7 +14,7 @@ Feel free to drop me a line.
 
 ##### Collaboration
 
-If you are looking for a technical advisor on topics like DevOps, Docker, Kubernetes head over to [Clarity.fm](https://clarity.fm/ivomarino) and schedule a call with me. Let's plan together all further steps to get game changing technologies straight into your business.
+{{< calendly "ivomarino" >}}
 
 ##### Mail
 <ul class="contact">
