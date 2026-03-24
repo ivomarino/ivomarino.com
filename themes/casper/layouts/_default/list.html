@@ -37,18 +37,13 @@
 
 <main class="content" role="main">
     {{ $paginator := .Paginator }}
-
-	<div class="extra-pagination inner">
+    <div class="extra-pagination inner">
+      {{ partial "pagination.html" $paginator }}
+    </div>
+    {{ range $index, $page := $paginator.Pages }}
+    {{ .Render "li" }}
+    {{ end }}
     {{ partial "pagination.html" $paginator }}
-	</div>
-
-	{{ range $index, $page := $paginator.Pages }}
-	   {{ .Render "li" }}
-	{{ end }}
-
-	{{ partial "pagination.html" $paginator }}
 </main>
-
-
 
 {{ partial "footer.html" . }}
