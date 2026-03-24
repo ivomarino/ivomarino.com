@@ -1,20 +1,24 @@
 {{ $baseurl := .Site.BaseURL }}
 <article class="post {{ .Section }}">
+  {{ with .Params.image }}
+  <a class="post-card-image-link" href="{{ $.RelPermalink }}">
+    <img class="post-card-image" src="{{ $baseurl }}{{ . }}" alt="{{ $.Title }}" loading="lazy">
+  </a>
+  {{ end }}
+  <div class="post-card-content">
     <header class="post-header">
       <h2 class="post-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
-
-      {{ with .Params.image }}<img src="{{ $baseurl }}{{ . }}" width="100" />{{ end }}
-
       <section class="post-meta">
         <time class="post-date" datetime="{{ .Date.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}">
-            {{ .Date.Format "Jan 2, 2006" }}
+          {{ .Date.Format "Jan 2, 2006" }}
         </time>
-       </section>
+        {{ with .ReadingTime }}<span class="post-reading-time">&middot; {{ . }} min read</span>{{ end }}
+      </section>
     </header>
     <section class="post-excerpt">
-        <p>{{ .Summary }} <a class="read-more" href="{{ .RelPermalink }}">&raquo;</a></p>
+      <p>{{ .Summary }} <a class="read-more" href="{{ .RelPermalink }}">&raquo;</a></p>
     </section>
-    
+  </div>
 </article>
 
 

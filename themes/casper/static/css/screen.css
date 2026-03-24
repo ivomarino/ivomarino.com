@@ -1034,6 +1034,26 @@ body.nav-opened .menu-button .word {
     hyphens: auto;
 }
 
+.post-card-image-link {
+    display: block;
+    margin: 0 0 1.5rem 0;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: var(--bg-secondary);
+}
+
+.post-card-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: cover;
+}
+
+.post-card-content {
+    padding: 0;
+}
+
 /* Add a little circle in the middle of the border-bottom on our .post
    just for the lolz and stylepoints. */
 .post:after {
