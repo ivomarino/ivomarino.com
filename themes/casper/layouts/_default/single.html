@@ -40,31 +40,6 @@
     <section class="post-content">
       {{ .Content }}
     </section>
-
-    {{ if ne .Params.footer false}}
-    <footer class="post-footer">
-      {{if .Site.Params.logo}}
-      <figure class="author-image">
-          <a class="img" href="{{.Site.BaseURL}}" style="background-image: url({{ $baseurl }}{{.Site.Params.logo}})"><span class="hidden">{{.Site.Params.author}}'s Picture</span></a>
-      </figure>
-      {{end}}
-
-      {{ if ne .Params.comments false}}
-      {{ with .Site.Config.Services.Disqus.Shortname }}
-      <div id="disqus_thread"></div>
-      <script type="text/javascript">
-        var disqus_shortname = '{{ . }}';
-        (function() {
-          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-        })();
-      </script>
-      <noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-      {{ end }}
-      {{ end }}
-    </footer>
-    {{ end }}
   </article>
 </main>
 {{ partial "footer.html" . }}
