@@ -8,7 +8,7 @@ slug = "resume"
 title = "Resume"
 +++
 
-Senior Platform Engineer / SRE with 15+ years building and operating production Kubernetes platforms across multi-cloud environments for enterprise and SaaS workloads. Specialised in Kubernetes (EKS, K3s, multi-cluster), GitOps (ArgoCD), and Infrastructure as Code (Terraform, Ansible) across AWS, Azure, and GCP.
+Senior Platform Engineer / SRE with 15+ years building and operating production platforms, specializing in Kubernetes across multi-cloud environments for enterprise and SaaS workloads. Specialised in Kubernetes (EKS, K3s, multi-cluster), GitOps (ArgoCD), and Infrastructure as Code (Terraform, Ansible) across AWS, Azure, and GCP.
 
 Delivered production-grade platforms for Swiss enterprise customers including Allianz Technology, NTT, REWE, Flow Swiss, and LerNetz+ AG. Focused on reliability, scalability, cost-efficient platform design, and improving developer experience.
 
