@@ -79,9 +79,9 @@ Responsible for IT infrastructure management across all Goethe-Institut location
 
 ## Open Source projects
 
-#### [AppFlow](https://github.com/ttssdev/appflow)
+#### [Flamelet](https://github.com/flameletlabs/flamelet)
 
-This tool allows to provision consistent environments over the entire infrastructure. Automated processes with traceability and reduction of error rates with possibility of reproduction and rollback functions. It's Open Source and independent from the physical environment (On-Premise, Cloud, Bare Metal). AppFlow works in both public and private clouds, as well as bare metal. Multitenant ready and config files are encrypted and maintained inside a private Git-Repo.
+A DevOps tool for remote infrastructure management and provisioning. Automates infrastructure setup from scratch across any environment (on-prem, cloud, bare metal). Built on Ansible, supporting multi-tenant deployments with centralized configuration management. Provides reproducible, traceable infrastructure provisioning with version control integration and rollback capabilities.
 
 ### [mentors.debian.net](https://mentors.debian.net)
 
