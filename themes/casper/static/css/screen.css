@@ -1079,6 +1079,10 @@ body:not(.post-template) .post-title {
     text-decoration: none;
 }
 
+[data-theme="dark"] .post-title a {
+    color: var(--text-heading);
+}
+
 .post-excerpt p {
     margin: 0;
     font-size: 0.9em;
