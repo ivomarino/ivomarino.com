@@ -96,9 +96,9 @@ I have been a Debian Package Maintainer for several years and managed packages l
 ## Speaks and Talks
 
 ### Swisscom TechTalk managed OpenShift
-[Swisscom Business Campus](https://www.linkedin.com/feed/update/urn:li:activity:6521424888991928320), 2019  
-[Impact Hub Bern](https://www.linkedin.com/feed/update/urn:li:activity:6518499967622004736), 2019  
-[Swisscom Business Campus](https://www.linkedin.com/feed/update/urn:li:ugcPost:6521297710937624576), 2019 
+[Swisscom Business Campus](https://www.linkedin.com/feed/update/urn:li:activity:6521424888991928320), 2019
+[Impact Hub Bern](https://www.linkedin.com/feed/update/urn:li:activity:6518499967622004736), 2019
+[Swisscom Business Campus](https://www.linkedin.com/feed/update/urn:li:ugcPost:6521297710937624576), 2019
 
 ### [Provisioning via Docker and AppFlow](https://www.meetup.com/Ansible-Zurich/events/238716282/)
 5th Ansible Zurich Meetup, 2017
