@@ -3,7 +3,7 @@
     <header class="post-header">
       <h2 class="post-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
 
-      <!-- img src="{{ with .Params.image }}{{ . }}{{ end }}" width="100" / -->
+      {{ with .Params.image }}<img src="{{ $baseurl }}{{ . }}" width="100" />{{ end }}
 
       <section class="post-meta">
         <time class="post-date" datetime="{{ .Date.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}">
