@@ -8,13 +8,13 @@ theme = "casper"
 summaryLength = 150
 
 [params]
-  description = "DevOps Engineer sharing insights on Kubernetes, databases, and infrastructure automation."
+  description = "Senior Platform Engineer / SRE sharing insights on Kubernetes, infrastructure automation, and production platforms at scale."
   cover = "img/main-01.jpg"
 
   author = "Ivo Marino"
   authorlocation = "Baar, Zug"
   authorwebsite = "https://ivomarino.com"
-  bio = "Husband, DevOps Engineer, remote freelancer."
+  bio = "Senior Platform Engineer / SRE. Founder of Floads GmbH. 15+ years building production Kubernetes platforms and infrastructure automation."
 
   # logo = "images/logo.png"
   googleAnalyticsUserID = "UA-27494094-1 "
