@@ -16,7 +16,7 @@
       </section>
     </header>
     <section class="post-excerpt">
-      <p>{{ .Summary }} <a class="read-more" href="{{ .RelPermalink }}">&raquo;</a></p>
+      <p>{{ truncate 400 .Summary }} <a class="read-more" href="{{ .RelPermalink }}">&raquo;</a></p>
     </section>
   </div>
 </article>

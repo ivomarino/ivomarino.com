@@ -4,7 +4,7 @@ date = "2026-03-23T00:00:00-00:00"
 draft = false
 slug = "mysql-scaling-beyond-k8s"
 tags = ["kubernetes", "database", "scaling", "mysql", "backups", "xtrabackup", "operations"]
-summary = "How a fintech database grew from GB to TB in Kubernetes, why backups failed, and the backup solution we built to escape."
+summary = "We ran MySQL in Kubernetes for years until the data scaled from GB to TB. Kubernetes wasn't the problem—backups were. Kasten (the Kubernetes backup tool) was never designed for databases at our scale. Learn why we moved MySQL off Kubernetes and the backup solution we built to solve this infrastructure challenge."
 comments = true
 image = "img/mysql-header.jpg"
 +++
