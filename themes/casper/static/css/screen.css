@@ -210,9 +210,9 @@ table { border-collapse: collapse; border-spacing: 0; }
 }
 
 [data-theme="dark"] {
-    --bg:           #121212;
-    --bg-secondary: #1a1a1a;
-    --bg-code:      #1e1e1e;
+    --bg:           #0c0c0c;
+    --bg-secondary: #151515;
+    --bg-code:      #1a1a1a;
     --text-body:    #e0e0e0;
     --text-heading: #f0f0f0;
     --text-meta:    #8e9daa;
