@@ -14,7 +14,7 @@ Feel free to drop me a line.
 
 ##### Collaboration
 
-{{< calendly "ivomarino" >}}
+{{< calendly "ivomarino/hello" >}}
 
 ##### Mail
 <ul class="contact">

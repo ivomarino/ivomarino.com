@@ -1,9 +1,9 @@
-{{ $username := .Get 0 }}
-{{ if $username }}
-<div class="calendly-inline-widget" data-url="https://calendly.com/{{ $username }}" style="min-width:320px;height:650px;"></div>
+{{ $path := .Get 0 }}
+{{ if $path }}
+<div class="calendly-inline-widget" data-url="https://calendly.com/{{ $path }}" style="min-width:320px;height:650px;"></div>
 <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
 {{ else }}
 <div class="calendly-error" style="color: red; padding: 1rem; border: 1px solid red;">
-  Error: Calendly shortcode requires a username parameter.
+  Error: Calendly shortcode requires a path parameter.
 </div>
 {{ end }}
