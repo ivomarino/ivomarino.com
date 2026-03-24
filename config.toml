@@ -2,7 +2,6 @@ baseurl = "https://ivomarino.com/"
 languageCode = "en-US"
 title = "ivomarino.com"
 paginate = 4
-DisqusShortname = "ivomarino"
 Copyright = "All rights reserved - 2026"
 theme = "casper"
 summaryLength = 150

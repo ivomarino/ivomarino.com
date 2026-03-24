@@ -185,7 +185,3 @@ This isn't a failure of Kubernetes. It's recognizing the right tool for the job.
 - Significantly fewer production incidents related to data loss
 
 The trade-off was worth it.
-
----
-
-**What's your experience?** Have you hit scaling limits with Kubernetes? What made you move databases out?
