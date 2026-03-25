@@ -77,10 +77,6 @@ The sync network was crucial. If pfsync packets got queued behind regular traffi
 pass in on egress proto tcp to 72.X.X.100 port { 80, 443 } \
   rdr-to { 10.Y.Y.1, 10.Y.Y.2, ..., 10.Y.Y.18 } port { 80, 443 }
 
-# SSH tunnel through firewall
-pass in on egress proto tcp to 72.X.X.100 port 2222 \
-  rdr-to 10.Y.Y.5 port 22
-
 # NAT: all outbound traffic from cluster to public IP
 pass out on egress from 10.Y.Y.0/24 nat-to 72.X.X.100
 ```
@@ -110,21 +106,14 @@ This works because pfsync keeps the backup's state table synchronized. When the 
 
 ## Port Forwarding Strategy
 
-Instead of traditional port ranges, we used **semantic port mapping**:
+We forward public ports to private cluster ports:
 
-- **80** → NodePort **30080** (HTTP)
-- **443** → NodePort **30443** (HTTPS)
-- **2222** → Pod on master node port **22** (SSH to cluster)
-- **3389** → NodePort **30389** (RDP for management)
+- **80** → cluster port **80** (HTTP)
+- **443** → cluster port **443** (HTTPS)
 
-NodePort range is typically 30000-32767. We stayed within it and forwarded inbound public ports to predictable NodePort destinations.
+The firewall does simple 1:1 forwarding. Traefik inside the cluster routes requests to backend services.
 
-This was simpler than:
-- Running ingress controllers on every node
-- Managing hostname-based routing
-- Dealing with SSL termination on the firewall
-
-The firewall's job: **forward and NAT**. Kubernetes' job: **route and serve**.
+This separation is clean: the firewall doesn't care what service is running. It just translates public IPs to private IPs. Traefik handles everything else.
 
 ## Load Balancing at the Firewall Level
 
@@ -142,58 +131,21 @@ This spreads traffic across workers, but **Traefik does the actual routing**. pf
 
 So if one worker is down, pf doesn't know — but Traefik does. Traefik routes around the dead worker. pf's load balancing is just a coarse distribution mechanism; Traefik is where the intelligence lives.
 
-## Updating OpenBSD VMs: No Big Deal
+## Updating OpenBSD VMs: Trivial
 
-One of the best parts of this setup: **updating is straightforward**.
+One of the best parts: **updates are dead simple**.
 
-**Typical update flow:**
-
-```bash
-# SSH into primary firewall
-ssh fw-primary
-
-# Apply updates
-sudo syspatch
-
-# Reboot if needed
-sudo shutdown -r now
-
-# CARP failover happens automatically
-# Backup takes over (stateful sync keeps connections alive)
-# Users don't see it
-
-# When primary comes back up, it rejoins as backup
-# Manual failback when convenient: pfctl -i carp0 -Fr
-```
-
-There's no special orchestration needed. OpenBSD's `syspatch` is trivial—usually 30 seconds to download and apply. Reboot takes ~1 minute. During the reboot:
-- Backup firewall becomes master (via CARP)
-- pfsync keeps connection state in sync
-- Existing TCP connections keep flowing
+OpenBSD's `syspatch` command patches the OS in ~30 seconds. Reboot takes ~1 minute. When the primary firewall reboots:
+- CARP automatically fails over to the backup
+- pfsync keeps all connection state in sync
+- Existing connections continue without interruption
 - New connections route through the backup
 
-Then update the backup. No downtime, no exotic load balancer coordination. Just reboot and move on.
+Zero downtime. No coordination needed. Just reboot and move on.
 
-This simplicity is one reason we haven't replaced this setup. Upgrading a cloud load balancer often requires downtime or complex blue-green deployments.
+Then update the backup. Done.
 
-## Remote Access: WireGuard on the Firewall
-
-Managing firewalls from the internet is a security nightmare. We run **WireGuard** on the firewall itself.
-
-```
-WireGuard VPN (on firewall)
-  ↓
-Private firewall management network
-  ↓
-SSH to firewall, then to cluster
-```
-
-This meant:
-- No SSH exposed to the internet on the firewall
-- Secure tunnel to internal management
-- A single source of truth for secrets (WireGuard config in Bitwarden)
-
-pf rules allowed WireGuard traffic in, but nothing else on the management port.
+This simplicity is a huge win over cloud load balancers, which often require scheduled maintenance windows or blue-green deployments for updates.
 
 ## What We Learned
 
