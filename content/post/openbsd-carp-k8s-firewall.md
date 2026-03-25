@@ -10,16 +10,18 @@ comments = true
 
 ## The Problem
 
-We had a private Kubernetes cluster on premises (not cloud). It needed a front-end that could:
+We had a Kubernetes cluster running in the cloud, but in a **completely private network** (VPC). Only the firewall nodes expose public IPs to the internet. The cluster needed a stateful front-end that could:
 
 1. **Handle HA** — a single firewall failing would kill everything
 2. **Forward traffic** to Kubernetes NodePorts without cloud magic
 3. **Survive failover** without dropping established connections
 4. **Load-balance** across multiple worker nodes
 
-Cloud load balancers (AWS, GCP, Azure) were off the table — this was on-premises infrastructure. We looked at HAProxy in HA mode (Keepalived), but Keepalived is stateless failover. Every connection would drop.
+Cloud load balancers (AWS ALB, NLB, etc.) felt like overkill — we'd be paying for managed services when we wanted full control over traffic rules and failover behavior. We looked at HAProxy in HA mode (Keepalived), but Keepalived is stateless. Every connection would drop on failover.
 
-We settled on **OpenBSD running CARP (Common Address Redundancy Protocol)** with `pfsync` state synchronization. It was the pragmatic choice for stateful, sub-second failover.
+We settled on **OpenBSD running CARP (Common Address Redundancy Protocol)** with `pfsync` state synchronization. It's been in production for **years** and remains the pragmatic choice for stateful, sub-second failover.
+
+**Status:** Still running, proven stable, no plans to change.
 
 ## Why OpenBSD + CARP
 
@@ -43,15 +45,19 @@ OpenBSD was the only thing that gave us stateful sync without paying enterprise 
 
 ## The Architecture
 
-Two OpenBSD VMs in separate physical locations (for fault isolation).
+Two OpenBSD VMs in separate availability zones (for fault isolation).
 
 ```
 Internet
    ↓
-[Firewall-Primary] ← CARP Master (72.X.X.1)
-[Firewall-Backup]  ← CARP Backup (72.X.X.2)
-   ↓ (both have CARP VIP: 72.X.X.100)
+[Firewall-Primary] ← CARP Master (72.X.X.1) - public IP
+[Firewall-Backup]  ← CARP Backup (72.X.X.2) - public IP
+   ↓ (both have CARP VIP: 72.X.X.100 - public)
+Private Network (VPC)
+   ↓
 [Kubernetes Cluster - 18+ worker nodes]
+   ↓
+[Traefik Ingress Controller]
 ```
 
 **Network Design:**
@@ -67,22 +73,24 @@ The sync network was crucial. If pfsync packets got queued behind regular traffi
 **pf Configuration (simplified):**
 
 ```
-# CARP VIP for external traffic
-pass in on egress proto tcp to 72.X.X.100 port 80 \
-  rdr-to { 10.Y.Y.1:30080, 10.Y.Y.2:30080, ..., 10.Y.Y.18:30080 }
+# CARP VIP for external HTTP/HTTPS traffic
+pass in on egress proto tcp to 72.X.X.100 port { 80, 443 } \
+  rdr-to { 10.Y.Y.1, 10.Y.Y.2, ..., 10.Y.Y.18 } port { 80, 443 }
 
-pass in on egress proto tcp to 72.X.X.100 port 443 \
-  rdr-to { 10.Y.Y.1:30443, 10.Y.Y.2:30443, ..., 10.Y.Y.18:30443 }
-
-# SSH to cluster through firewall
+# SSH tunnel through firewall
 pass in on egress proto tcp to 72.X.X.100 port 2222 \
-  rdr-to { 10.Y.Y.5:22 }
+  rdr-to 10.Y.Y.5 port 22
 
-# NAT: outbound traffic from cluster
+# NAT: all outbound traffic from cluster to public IP
 pass out on egress from 10.Y.Y.0/24 nat-to 72.X.X.100
 ```
 
-This simple port-forwarding approach meant Kubernetes could expose NodePorts, and the firewall handled the public-to-private translation. No complex ingress controllers needed (though we had them for other use cases).
+The firewall does **simple port forwarding**: traffic on public IPs (72.X.X.100) gets redirected to private IPs in the cluster. Inside the cluster, **Traefik (Kubernetes ingress controller)** handles routing. This separation of concerns is clean:
+
+- **pf (firewall):** Public ↔ Private IP translation, HA failover, NAT
+- **Traefik (cluster):** HTTP routing, TLS termination, rate limiting, path-based routing
+
+No load balancing logic at the firewall level. The `rdr-to` pool distributes new connections, but Traefik is what actually routes requests to backend services.
 
 ## Real-Time Failover Demo
 
@@ -118,17 +126,55 @@ This was simpler than:
 
 The firewall's job: **forward and NAT**. Kubernetes' job: **route and serve**.
 
-## Load Balancing Across Worker Nodes
+## Load Balancing at the Firewall Level
 
-The pf `rdr-to` rule includes a pool of backend addresses. pf distributes traffic across them using round-robin by default.
+The pf `rdr-to` rule includes a pool of backend worker IPs. pf distributes new connections using a hash of source/destination (not pure round-robin).
 
 ```pf
-rdr-to { 10.Y.Y.1:30080, 10.Y.Y.2:30080, ..., 10.Y.Y.18:30080 }
+rdr-to { 10.Y.Y.1, 10.Y.Y.2, ..., 10.Y.Y.18 } port 80
 ```
 
-This isn't true session-aware load balancing, but it works well for HTTP/HTTPS. A single TCP connection always goes to one backend (based on source/dest hash). New connections spread across the pool.
+This spreads traffic across workers, but **Traefik does the actual routing**. pf just ensures the connection gets to one worker; Traefik then handles:
+- Layer-7 routing (by hostname, path, headers)
+- TLS termination
+- Session affinity (sticky cookies)
+- Service discovery
 
-For sticky sessions, we'd need to inspect application state, which we didn't. The cluster's ingress controllers handled session affinity if needed.
+So if one worker is down, pf doesn't know — but Traefik does. Traefik routes around the dead worker. pf's load balancing is just a coarse distribution mechanism; Traefik is where the intelligence lives.
+
+## Updating OpenBSD VMs: No Big Deal
+
+One of the best parts of this setup: **updating is straightforward**.
+
+**Typical update flow:**
+
+```bash
+# SSH into primary firewall
+ssh fw-primary
+
+# Apply updates
+sudo syspatch
+
+# Reboot if needed
+sudo shutdown -r now
+
+# CARP failover happens automatically
+# Backup takes over (stateful sync keeps connections alive)
+# Users don't see it
+
+# When primary comes back up, it rejoins as backup
+# Manual failback when convenient: pfctl -i carp0 -Fr
+```
+
+There's no special orchestration needed. OpenBSD's `syspatch` is trivial—usually 30 seconds to download and apply. Reboot takes ~1 minute. During the reboot:
+- Backup firewall becomes master (via CARP)
+- pfsync keeps connection state in sync
+- Existing TCP connections keep flowing
+- New connections route through the backup
+
+Then update the backup. No downtime, no exotic load balancer coordination. Just reboot and move on.
+
+This simplicity is one reason we haven't replaced this setup. Upgrading a cloud load balancer often requires downtime or complex blue-green deployments.
 
 ## Remote Access: WireGuard on the Firewall
 
@@ -196,14 +242,24 @@ For a private cluster serving internal users, this trade-off made sense. For a p
 
 ## Would We Do It Again?
 
-Yes, with reservations.
+**Absolutely.** This setup has been running for years in production. Zero regrets.
 
-CARP + pfsync is the right tool for **stateful HA failover in an on-prem environment**. The setup is straightforward, the failover is sub-second, and the operational overhead is low.
+CARP + pfsync is the right tool for **stateful HA failover when you control the infrastructure**. The setup is straightforward, the failover is sub-second, and the operational overhead is minimal. Updating firewalls is easier than updating most managed cloud services.
 
-But it requires:
-- Understanding of network architecture (VIPs, multicast, ARP)
-- Comfort with command-line firewall management
-- Monitoring for split-brain scenarios
-- Regular testing of failover (we automated this)
+The trade-offs are favorable:
+- ✅ Full control over traffic rules
+- ✅ No cloud egress charges
+- ✅ Sub-second stateful failover (unbeatable for connection continuity)
+- ✅ Simple to operate and update
+- ❌ You own it (no vendor support)
+- ❌ Bound to your infrastructure provider's network
 
-If you're in the cloud, use the cloud's load balancer. If you're on-prem and need stateful failover, OpenBSD CARP is worth the time to learn.
+For a private cluster where you already own the infrastructure, OpenBSD CARP is the pragmatic choice. It works. It keeps working. Updates are trivial. Failover is transparent.
+
+**If you're considering this:** You need comfort with:
+- Network architecture (VIPs, multicast, ARP)
+- Command-line firewall management (pf syntax is learnable)
+- Monitoring for split-brain scenarios (rare but possible)
+- Testing failover occasionally (we do this monthly)
+
+If you have those skills and control your own infrastructure, stop paying for cloud load balancers. CARP is simpler and better for your use case.
