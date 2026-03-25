@@ -1,7 +1,7 @@
 +++
 title = "Production Backup Strategy: Three Layers of Defense"
 date = "2026-05-05T00:00:00-00:00"
-draft = false
+draft = true
 slug = "production-backup-strategy"
 tags = ["backup-series", "infrastructure", "backups", "operations", "zfs", "restic", "s3", "disaster-recovery", "compliance", "cost-efficiency"]
 summary = "Single backup tool doesn't work at production scale. Learn the three-layer backup architecture combining ZFS snapshots (local fast recovery), Restic backups (offsite immutable), and S3 archives (compliance). Achieves defense-in-depth with 1TB data, point-in-time recovery, and only $50/month cost."

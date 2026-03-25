@@ -1,7 +1,7 @@
 +++
 title = "S3 Bucket Backups with Restic: Automating Cloud Storage Replication"
 date = "2026-05-10T00:00:00-00:00"
-draft = false
+draft = true
 slug = "s3-bucket-backups"
 tags = ["backup-series", "cloud-storage", "backups", "operations", "s3", "restic", "rclone", "incremental-backup", "point-in-time-recovery", "automation"]
 summary = "S3 buckets aren't backups. Secure them with independent snapshots using rclone FUSE mounting and restic deduplication. 500GB of production buckets compressed to 100GB with 80% savings. Includes automation, configuration, and real operational procedures for 2-3 hour backup windows."

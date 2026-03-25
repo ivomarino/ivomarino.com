@@ -1,7 +1,7 @@
 +++
 title = "ZFS Offsite Backups on FreeBSD: Incremental Replication at Scale"
 date = "2026-05-01T00:00:00-00:00"
-draft = false
+draft = true
 slug = "zfs-offsite-backups"
 tags = ["backup-series", "infrastructure", "backups", "operations", "zfs", "freebsd", "replication", "incremental-backup", "point-in-time-recovery", "automation"]
 summary = "ZFS snapshots are the foundation for efficient backups. Learn how to replicate them to offsite targets at scale using zfs-autobackup, from simple pairs (lab scale) to hub-and-spoke architectures (production). Includes real numbers and deployment patterns for 1TB+ datasets with minute-level incremental backups."

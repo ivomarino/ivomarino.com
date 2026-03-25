@@ -1,7 +1,7 @@
 +++
 title = "Kubernetes Node Autoscaling: When Pod Scaling Isn't the Answer"
 date = "2026-05-15T00:00:00-00:00"
-draft = false
+draft = true
 slug = "node-autoscaling-cluster-autoscaler"
 tags = ["autoscaling-series", "kubernetes", "infrastructure", "operations", "cluster-autoscaler", "node-scaling", "autoscaling", "cost-efficiency"]
 summary = "HPA scales pods, but pods can't run if there's no space on the cluster. Learn why cluster autoscaling is the answer for bursty, unpredictable workloads. Includes pod disruption budgets, graceful shutdown, and real patterns for scaling nodes alongside pod autoscaling."

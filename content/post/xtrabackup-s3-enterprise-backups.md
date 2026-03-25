@@ -1,7 +1,7 @@
 +++
 title = "XtraBackup + S3: Enterprise Database Backup Strategy"
 date = "2026-04-01T00:00:00-00:00"
-draft = false
+draft = true
 slug = "xtrabackup-s3-enterprise-backups"
 tags = ["backup-series", "database", "backups", "operations", "mysql", "xtrabackup", "s3", "incremental-backup", "point-in-time-recovery", "cost-efficiency"]
 summary = "Database backups at TB scale require incremental backups with intelligent chain management. Learn how XtraBackup + S3 storage with chain-aware retention solves point-in-time recovery without the cost of managed backup solutions. Includes automation patterns used in production."
