@@ -101,6 +101,9 @@ We didn't just move the database. We built a backup solution designed for MySQL 
 - Local or S3 storage modes
 - Dry-run support for safety
 
+The full implementation is open source:
+[github.com/floadsio/syseng/tree/main/mysql/xtrabackup-s3](https://github.com/floadsio/syseng/tree/main/mysql/xtrabackup-s3)
+
 **Workflow:**
 
 ```
