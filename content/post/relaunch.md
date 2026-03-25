@@ -1,22 +1,40 @@
 +++
 comments = true
-date = "2019-04-13T00:00:00-00:00"
-draft = true
-share = false
+date = "2026-01-01T00:00:00-00:00"
+draft = false
 slug = "relaunch"
-tags = ["relaunch"]
-title = "Relaunch"
-description = "The relaunch of ivomarino.com and the journey to share experiences about DevOps, technology, and human aspects of working in tech."
-image = "img/head-02.jpg"
-summary = "Why I relaunched this site and what I plan to share about working in tech and DevOps."
+tags = ["infrastructure", "operations", "lessons", "platform-engineering"]
+title = "2026 Relaunch: Infrastructure Lessons from 10+ Years Running Production"
+description = "Back online with a focus on pragmatic infrastructure patterns, backup strategies, and Kubernetes operations. Real lessons from building and operating production platforms."
+image = "img/main-01.jpg"
+summary = "Relaunching with a focus on pragmatic infrastructure: backup strategies, Kubernetes autoscaling, and lessons from 10+ years of production operations."
 +++
 
-It was time to relaunch my site.
+It’s time to relaunch.
 
-Quite much time has passed since the first launch of this domain, so it’s a perfect moment for getting thoughts back online.
+After years of building and operating production platforms, I’m sharing what actually works—not theory, not marketing, but real patterns from infrastructure that handles billions of transactions.
 
-The idea is to write about my experiences being around in the tech industry as a DevOps Engineer focusing not only on the tech part but also on the human aspects related to computer science.
+## What You’ll Read Here
 
-Things are moving so fast today in the high-tech scene that it’s easy to lose the fun factor while pushing business tasks and it should not be like this.
+**Infrastructure at Scale:**
+- How databases fail when they outgrow Kubernetes (and what to do about it)
+- Backup strategies that don’t bankrupt you: XtraBackup, ZFS, S3
+- High-availability firewalls for private clusters (OpenBSD CARP)
 
-There are different recipes for bringing joy back to work and keep the whole team together, during my next posts I’ll try to show you some. Stay tuned.
+**Kubernetes Operations:**
+- Pod autoscaling that works for queue-based systems (spoiler: CPU metrics fail)
+- Node autoscaling when your pods can’t find homes
+- Real numbers on latency, cost, and what matters
+
+**Enterprise Infrastructure:**
+- Three-layer backup strategy for disaster recovery
+- Incremental replication across storage nodes
+- Production patterns that survive complexity
+
+## Why Now
+
+Most blog posts in tech are either tutorials for beginners or marketing for vendors. This is different. These are pragmatic solutions to real problems: scaling MySQL to TB, autoscaling bursty workloads, protecting S3 buckets, designing resilience.
+
+No buzzwords. No SaaS pitches. Just what we learned running infrastructure at scale.
+
+**Ready?** Start with [Scaling MySQL Beyond Kubernetes](/post/mysql-scaling-beyond-k8s/).
