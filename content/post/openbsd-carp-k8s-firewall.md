@@ -126,10 +126,32 @@ rdr-to { 10.Y.Y.1, 10.Y.Y.2, ..., 10.Y.Y.18 } port 80
 This spreads traffic across workers, but **Traefik does the actual routing**. pf just ensures the connection gets to one worker; Traefik then handles:
 - Layer-7 routing (by hostname, path, headers)
 - TLS termination
-- Session affinity (sticky cookies)
 - Service discovery
 
-So if one worker is down, pf doesn't know — but Traefik does. Traefik routes around the dead worker. pf's load balancing is just a coarse distribution mechanism; Traefik is where the intelligence lives.
+## Sticky Sessions with Traefik
+
+For stateful applications that need session affinity, Traefik uses **sticky session cookies**. Services configured in Kubernetes can enable sticky cookies via annotations:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    traefik.ingress.kubernetes.io/service.sticky.cookie: "true"
+    traefik.ingress.kubernetes.io/service.sticky.cookie.httponly: "true"
+    traefik.ingress.kubernetes.io/service.sticky.cookie.samesite: "none"
+    traefik.ingress.kubernetes.io/service.sticky.cookie.secure: "true"
+  name: my-service
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: my-service
+```
+
+Traefik sets a cookie with a session ID. Subsequent requests from the same client automatically route to the same backend pod. No application changes needed.
+
+So: **pf distributes to workers**, **Traefik distributes to pods** (with session stickiness if needed).
 
 ## Updating OpenBSD VMs: Trivial
 
