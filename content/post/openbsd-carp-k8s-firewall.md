@@ -5,6 +5,7 @@ draft = false
 slug = "openbsd-carp-k8s-firewall"
 tags = ["openbsd", "kubernetes", "networking", "firewall", "carp", "pf", "operations"]
 summary = "We run two OpenBSD firewalls in CARP HA mode in front of a private Kubernetes cluster. Sub-second failover, full state sync, and pf rules that load-balance across 18+ worker nodes."
+image = "img/openbsd-carp-header.jpg"
 comments = true
 +++
 
