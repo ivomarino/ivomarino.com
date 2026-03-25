@@ -23,8 +23,9 @@ We focus on combining the right platform for each problem:
 - **Debian** for reliable, predictable Linux at scale
 - **FreeBSD** for storage, replication, and performance-critical systems
 - **OpenBSD** for security, firewalls, and network infrastructure
+- **Ansible** for automation, configuration, and orchestration across platforms
 
-The goal is not to use one tool for everything, but to choose the best platform for each layer and make them work together seamlessly.
+The goal is not to use one tool for everything, but to choose the best platform for each layer and automate everything we can. When you run infrastructure at scale, manual operations don't work. Automation isn't optional—it's how you survive.
 
 The focus is on what we’ve learned through:
 - Building infrastructure to handle production workloads
