@@ -129,6 +129,17 @@ This spreads traffic across workers, but **Traefik does the actual routing**. pf
 - TLS termination
 - Service discovery
 
+## Traefik Redundancy and Failover
+
+Traefik itself runs redundantly across multiple worker nodes. We deploy Traefik with multiple replicas (typically 3+), so if one Traefik pod crashes or a node fails, other Traefik instances immediately take over routing.
+
+This creates a complete HA stack:
+- **Firewall layer:** CARP handles public IP failover (OpenBSD VMs)
+- **Ingress layer:** Traefik replicas handle traffic distribution (Kubernetes)
+- **Application layer:** App pods run with multiple replicas
+
+If a single component fails at any layer, the others absorb the traffic. The firewall doesn't know (or care) which Traefik pod handles a request—it just forwards to any worker running Traefik.
+
 ## Sticky Sessions with Traefik
 
 For stateful applications that need session affinity, Traefik uses **sticky session cookies**. Services configured in Kubernetes can enable sticky cookies via annotations:
