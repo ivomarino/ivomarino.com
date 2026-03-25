@@ -18,9 +18,18 @@ After 10+ years building and operating production platforms at scale, I’m shar
 
 A collection of pragmatic patterns and lessons from running infrastructure that matters: storage systems, Kubernetes clusters, backup infrastructure, autoscaling mechanisms, disaster recovery, and the operational decisions that separate systems that scale from systems that break.
 
+We focus on combining the right platform for each problem:
+- **Kubernetes** for orchestration and scaling compute workloads
+- **Debian** for reliable, predictable Linux at scale
+- **FreeBSD** for storage, replication, and performance-critical systems
+- **OpenBSD** for security, firewalls, and network infrastructure
+
+The goal is not to use one tool for everything, but to choose the best platform for each layer and make them work together seamlessly.
+
 The focus is on what we’ve learned through:
 - Building infrastructure to handle production workloads
-- Operating systems at scale (storage, compute, networking)
+- Choosing the right platform for each problem layer
+- Operating systems at scale (compute, storage, networking)
 - Solving real problems: capacity, reliability, cost, resilience
 - Making architectural decisions with real constraints and tradeoffs
 
