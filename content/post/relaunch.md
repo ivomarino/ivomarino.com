@@ -24,8 +24,9 @@ We focus on combining the right platform for each problem:
 - **FreeBSD** for storage, replication, and performance-critical systems
 - **OpenBSD** for security, firewalls, and network infrastructure
 - **Ansible** for automation, configuration, and orchestration across platforms
+- **GitOps** for version-controlled infrastructure and declarative deployments
 
-The goal is not to use one tool for everything, but to choose the best platform for each layer and automate everything we can. When you run infrastructure at scale, manual operations don't work. Automation isn't optional—it's how you survive.
+The goal is not to use one tool for everything, but to choose the best platform for each layer and automate everything we can. When you run infrastructure at scale, manual operations don't work. Automation isn't optional—it's how you survive. GitOps ensures your infrastructure is always defined in version control, auditable, and reproducible.
 
 The focus is on what we’ve learned through:
 - Building infrastructure to handle production workloads
