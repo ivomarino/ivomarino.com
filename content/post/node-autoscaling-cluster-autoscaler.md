@@ -123,7 +123,7 @@ Different cloud providers use different node group naming:
 - AWS: Auto Scaling Group (ASG) name
 - GCP: Node pool name
 - Azure: VM scale set name
-- Custom: Whatever your provisioning system uses
+- Custom/Private: FlowSwiss, custom Kubernetes platforms, or any provisioning system
 
 ## Critical: Pod Disruption Budgets
 
@@ -281,7 +281,7 @@ kubectl patch pod <name> -p \
    - AWS: Use Auto Scaling Groups
    - GCP: Use Node Pools
    - Azure: Use VM Scale Sets
-   - Custom: Implement custom cloud provider driver
+   - Custom/Private: FlowSwiss, custom Kubernetes platforms, or implement custom cloud provider driver
 
 2. **Deploy cluster autoscaler:**
    - Use official Helm chart or YAML manifests
