@@ -12,29 +12,27 @@ summary = "Relaunching with a focus on pragmatic infrastructure: backup strategi
 
 It’s time to relaunch.
 
-After years of building and operating production platforms, I’m sharing what actually works—not theory, not marketing, but real patterns from infrastructure that handles billions of transactions.
+After 10+ years building and operating production platforms at scale, I’m sharing what actually works. Not theory. Not marketing. Real solutions to hard problems.
 
-## What You’ll Read Here
+## What This Is
 
-**Infrastructure at Scale:**
-- How databases fail when they outgrow Kubernetes (and what to do about it)
-- Backup strategies that don’t bankrupt you: XtraBackup, ZFS, S3
-- High-availability firewalls for private clusters (OpenBSD CARP)
+A collection of pragmatic patterns and lessons from running infrastructure that matters: storage systems, Kubernetes clusters, backup infrastructure, autoscaling mechanisms, disaster recovery, and the operational decisions that separate systems that scale from systems that break.
 
-**Kubernetes Operations:**
-- Pod autoscaling that works for queue-based systems (spoiler: CPU metrics fail)
-- Node autoscaling when your pods can’t find homes
-- Real numbers on latency, cost, and what matters
+The focus is on what we’ve learned through:
+- Building infrastructure to handle production workloads
+- Operating systems at scale (storage, compute, networking)
+- Solving real problems: capacity, reliability, cost, resilience
+- Making architectural decisions with real constraints and tradeoffs
 
-**Enterprise Infrastructure:**
-- Three-layer backup strategy for disaster recovery
-- Incremental replication across storage nodes
-- Production patterns that survive complexity
+## What This Is Not
+
+- Tutorials for beginners
+- Marketing for vendor solutions
+- "Best practices" that apply to everyone
+- Buzzword-driven technical writing
 
 ## Why Now
 
-Most blog posts in tech are either tutorials for beginners or marketing for vendors. This is different. These are pragmatic solutions to real problems: scaling MySQL to TB, autoscaling bursty workloads, protecting S3 buckets, designing resilience.
+Most technical content is either too academic or too promotional. This is different. It’s grounded in actual production experience: what broke, why it broke, how we fixed it, and what we learned.
 
-No buzzwords. No SaaS pitches. Just what we learned running infrastructure at scale.
-
-**Ready?** Start with [Scaling MySQL Beyond Kubernetes](/post/mysql-scaling-beyond-k8s/).
+Real numbers. Real tradeoffs. Real solutions from infrastructure operating in production environments.
