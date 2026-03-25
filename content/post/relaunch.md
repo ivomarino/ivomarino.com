@@ -6,7 +6,7 @@ slug = "relaunch"
 tags = ["infrastructure", "operations", "lessons", "platform-engineering"]
 title = "2026 Relaunch: Infrastructure Lessons from 10+ Years Running Production"
 description = "Back online with a focus on pragmatic infrastructure patterns, backup strategies, and Kubernetes operations. Real lessons from building and operating production platforms."
-image = "img/main-01.jpg"
+image = "img/relaunch-header.jpg"
 summary = "Relaunching with a focus on pragmatic infrastructure: backup strategies, Kubernetes autoscaling, and lessons from 10+ years of production operations."
 +++
 
