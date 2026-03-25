@@ -4,7 +4,7 @@ date = "2026-03-25T00:00:00-00:00"
 draft = false
 slug = "openbsd-carp-k8s-firewall"
 tags = ["openbsd", "kubernetes", "networking", "firewall", "carp", "pf", "operations"]
-summary = "We run two OpenBSD firewalls in CARP HA mode in front of a private Kubernetes cluster. Sub-second failover, full state sync, and pf rules that load-balance across 18+ worker nodes."
+summary = "We run two OpenBSD firewalls in CARP HA mode in front of a private Kubernetes cluster. Sub-second failover, full state sync, and pf rules that load-balance across worker nodes."
 image = "img/openbsd-carp-header.jpg"
 comments = true
 +++
@@ -51,12 +51,12 @@ Two OpenBSD VMs in separate availability zones (for fault isolation).
 ```
 Internet
    ↓
-[Firewall-Primary] ← CARP Master (72.X.X.1) - public IP
-[Firewall-Backup]  ← CARP Backup (72.X.X.2) - public IP
-   ↓ (both have CARP VIP: 72.X.X.100 - public)
+[Firewall-Primary] ← CARP Master - public IP
+[Firewall-Backup]  ← CARP Backup - public IP
+   ↓ (both have CARP VIP - public)
 Private Network (VPC)
    ↓
-[Kubernetes Cluster - 18+ worker nodes]
+[Kubernetes Cluster]
    ↓
 [Traefik Ingress Controller]
 ```
@@ -75,11 +75,11 @@ The sync network was crucial. If pfsync packets got queued behind regular traffi
 
 ```
 # CARP VIP for external HTTP/HTTPS traffic
-pass in on egress proto tcp to 72.X.X.100 port { 80, 443 } \
-  rdr-to { 10.Y.Y.1, 10.Y.Y.2, ..., 10.Y.Y.18 } port { 80, 443 }
+pass in on egress proto tcp to <vip-public> port { 80, 443 } \
+  rdr-to <worker-pool> port { 80, 443 }
 
 # NAT: all outbound traffic from cluster to public IP
-pass out on egress from 10.Y.Y.0/24 nat-to 72.X.X.100
+pass out on egress from <cluster-net> nat-to <vip-public>
 ```
 
 The firewall does **simple port forwarding**: traffic on public IPs (72.X.X.100) gets redirected to private IPs in the cluster. Inside the cluster, **Traefik (Kubernetes ingress controller)** handles routing. This separation of concerns is clean:
@@ -121,7 +121,7 @@ This separation is clean: the firewall doesn't care what service is running. It 
 The pf `rdr-to` rule includes a pool of backend worker IPs. pf distributes new connections using a hash of source/destination (not pure round-robin).
 
 ```pf
-rdr-to { 10.Y.Y.1, 10.Y.Y.2, ..., 10.Y.Y.18 } port 80
+rdr-to <worker-pool> port 80
 ```
 
 This spreads traffic across workers, but **Traefik does the actual routing**. pf just ensures the connection gets to one worker; Traefik then handles:
@@ -235,6 +235,6 @@ For a private cluster where you already own the infrastructure, OpenBSD CARP is 
 - Network architecture (VIPs, multicast, ARP)
 - Command-line firewall management (pf syntax is learnable)
 - Monitoring for split-brain scenarios (rare but possible)
-- Testing failover occasionally (we do this monthly)
+- Testing failover regularly
 
 If you have those skills and control your own infrastructure, stop paying for cloud load balancers. CARP is simpler and better for your use case.
