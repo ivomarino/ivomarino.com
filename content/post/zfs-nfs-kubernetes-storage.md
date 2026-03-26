@@ -186,7 +186,7 @@ spec:
 
 ### Automatic Snapshots with zfs-autobackup
 
-We use [zfs-autobackup](https://github.com/jimklimov/zfs-autobackup), a Python tool that handles the entire workflow automatically:
+We use [zfs-autobackup](https://github.com/jimklimov/zfs-autobackup), a Python tool that handles the entire workflow automatically.
 
 **Step 1: Tag datasets**
 
@@ -203,6 +203,9 @@ The tool:
 - Destroys incompatible snapshots automatically
 - Maintains retention policy (10 recent + daily + weekly + monthly)
 
+zfs-autobackup supports two modes:
+
+**Push mode** (run on source, push to destination):
 ```bash
 zfs-autobackup \
   --clear-mountpoint \
@@ -211,6 +214,17 @@ zfs-autobackup \
   k8s-offsite \
   zroot/remote/k8s-data
 ```
+
+**Pull mode** (run on destination, pull from source):
+```bash
+zfs-autobackup \
+  --clear-mountpoint \
+  --destroy-incompatible \
+  storage-node.internal \
+  zroot/remote/k8s-data
+```
+
+Use push mode if the storage node initiates backups. Use pull mode if the offsite target initiates backups (more common in air-gapped environments).
 
 Run this daily via cron (3:15 AM, for example):
 
