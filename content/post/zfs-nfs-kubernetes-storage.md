@@ -276,12 +276,43 @@ Then use **CARP** (Common Address Redundancy Protocol) on both FreeBSD storage n
 
 This gives you true HA storage with automatic failover, all managed with open-source tools.
 
+## What We Actually Store
+
+In production, the storage nodes host a mix of real workloads:
+
+**Databases**
+- MySQL instances backing web applications and CMS platforms
+- 200MB–2GB per application (varies by size and retention)
+- Point-in-time recovery critical: corruption or accidental deletes are catastrophic
+
+**User-Generated Content**
+- CMS asset libraries (images, PDFs, documents uploaded by users)
+- Can grow to 33GB+ for mature content platforms
+- Needs recovery if media library corrupts or users accidentally delete content
+
+**Build & CI/CD Artifacts**
+- Jenkins: compiled binaries, build logs, caches, workspace data
+- 1–5GB depending on build frequency and artifact retention
+- Must survive pod restarts without data loss
+
+**Application State**
+- Cache, temporary files, application configuration
+- PHP-FPM files, Java build caches, config backups
+- Often the difference between pod restart and data corruption
+
+**Package Repositories**
+- Composer/NPM mirrors cached for faster deployments
+- Can be 10GB+ for large teams
+- Recoverable but expensive to rebuild
+
+This isn't ephemeral data. It's the stuff that breaks your application if it disappears. That's why snapshots matter.
+
 ## Real Numbers
 
 **Our setup:**
 
 - **NFS Node:** 2 vCPU, 4GB RAM FreeBSD VM
-- **Data:** 1TB active K8s storage (with 998GB ZFS pool in staging, 97.5GB in production metadata)
+- **Data:** 1TB active K8s storage (with 998GB ZFS pool in staging, 97.5GB in production)
 - **Snapshot storage:** 50GB additional (snapshots use copy-on-write)
 - **Hourly snapshots:** 72 retained (3 days)
 - **Daily replication:** <10 minutes (incremental only)
