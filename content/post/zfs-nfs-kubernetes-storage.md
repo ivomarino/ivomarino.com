@@ -247,6 +247,34 @@ Run this daily via cron (3:15 AM, for example):
 - **Retention:** Automatic snapshot pruning (keeps N recent + age-based)
 - **Resume-safe:** Tracks which snapshots were sent, safe to interrupt/resume
 
+## Maintenance & High Availability
+
+**Keeping FreeBSD Updated**
+
+FreeBSD is trivial to maintain. Security updates are seamless:
+
+```bash
+freebsd-update fetch install
+```
+
+No restarts required for most updates. Reboot only when kernel patches land. A single storage node is simpler to manage than a managed service—no vendor updates to wait for, no API changes to track.
+
+**High Availability (Optional)**
+
+For production HA, replicate to a second storage node in the same VPC:
+
+```bash
+# On second storage node, pull from primary via zfs-autobackup
+zfs-autobackup \
+  --destroy-incompatible \
+  primary-storage.internal \
+  zroot/k8s-data-replica
+```
+
+Then use **CARP** (Common Address Redundancy Protocol) on both FreeBSD storage nodes to provide a virtual IP (VIP) for NFS access. K8s storage class points to the VIP instead of a single node. Sub-second failover is automatic—if the primary storage node fails, CARP promotes the replica and NFS requests resume on the secondary without pod restarts.
+
+This gives you true HA storage with automatic failover, all managed with open-source tools.
+
 ## Real Numbers
 
 **Our setup:**
