@@ -1,7 +1,7 @@
 +++
 title = "ZFS + NFS as Kubernetes Storage: Point-in-Time Recovery Without the Cost"
-date = "2026-04-15T00:00:00-00:00"
-draft = true
+date = "2026-03-26T00:00:00-00:00"
+draft = false
 slug = "zfs-nfs-kubernetes-storage"
 tags = ["kubernetes", "storage", "infrastructure", "zfs", "nfs", "freebsd", "backup-series", "point-in-time-recovery", "reliability", "cost-efficiency"]
 summary = "Kubernetes storage is either ephemeral or expensive. We run a FreeBSD VM with ZFS + NFS in the same VPC as our K8s cluster. Hourly snapshots protect your data. Fast recovery. No vendor lock-in. Here's how we do it."
