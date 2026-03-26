@@ -121,7 +121,7 @@ Database returns to clean state from 30 min ago
 
 ```
 Human error deletes important files
-Too late for `rm -r` recovery
+Too late for rm -r recovery
 Clone offsite snapshot to recovery volume:
   zfs clone zroot/remote/k8s-data@2026-04-14 \
     zroot/recovery
