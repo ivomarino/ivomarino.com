@@ -9,13 +9,13 @@ We chose the fourth option: a 2vCPU, 4GB RAM FreeBSD VM running ZFS + NFS in the
 
 Here's what changed:
 
-**Point-in-time recovery.** Hourly snapshots cost almost nothing in storage space (copy-on-write). Pod crashes? Data's intact on NFS. App bug corrupts data? Rollback in 5 minutes. Accidental delete? Clone from yesterday's snapshot.
+Point-in-time recovery. Hourly snapshots cost almost nothing in storage space (copy-on-write). Pod crashes? Data's intact on NFS. App bug corrupts data? Rollback in 5 minutes. Accidental delete? Clone from yesterday's snapshot.
 
-**True multi-cluster storage.** Mount the same NFS export from staging + production simultaneously. Share storage across cluster boundaries without vendor APIs.
+True multi-cluster storage. Mount the same NFS export from staging + production simultaneously. Share storage across cluster boundaries without vendor APIs.
 
-**Automated backups.** zfs-autobackup replicates incremental snapshots nightly to offsite storage. First sync is full, then only changed blocks transfer. Recovery time: minutes.
+Automated backups. zfs-autobackup replicates incremental snapshots nightly to offsite storage. First sync is full, then only changed blocks transfer. Recovery time: minutes.
 
-**Real numbers:**
+Real numbers:
 - VM cost: ~$30-40/month
 - Offsite storage: ~$50/month
 - Total: ~$80-90/month
@@ -28,6 +28,6 @@ No vendor lock-in. No per-gigabyte fees. No hoping someone else's backup works.
 
 Just reliable storage that actually lets you recover data.
 
-New blog post: ZFS + NFS as Kubernetes Storage—architecture, implementation, and why snapshots matter.
+Read the full story: https://ivomarino.com/post/zfs-nfs-kubernetes-storage/
 
 #Kubernetes #Infrastructure #Storage #ZFS #DevOps #ReliabilityEngineering
