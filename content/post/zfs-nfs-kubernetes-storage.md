@@ -75,6 +75,7 @@ Apps request storage via PersistentVolumeClaim. Kubernetes mounts standard NFS s
 
 **Layer 2: Storage Node (Single FreeBSD VM in same VPC)**
 
+- VM specs: 2 vCPU, 4GB RAM (minimal, but sufficient for NFS)
 - Export: `/export/k8s-data` via NFS
 - Filesystem: `zroot/k8s-data` (ZFS with snapshots)
 - Snapshots: Hourly (automatically created, pruned after 3 days)
@@ -287,10 +288,10 @@ This gives you true HA storage with automatic failover, all managed with open-so
 
 **Cost:**
 
-- FreeBSD VM (standard cloud instance): ~$50-100/month
+- FreeBSD VM (2 vCPU, 4GB RAM, 2TB storage): ~$30-40/month
 - Offsite storage: ~$50/month (rsync.net)
 - Kubernetes CSI driver: Free (open source)
-- **Total: ~$100-150/month**
+- **Total: ~$80-90/month**
 
 **vs. AWS EBS + backup solution:**
 
@@ -298,7 +299,7 @@ This gives you true HA storage with automatic failover, all managed with open-so
 - Backup service: $200+/month
 - **Total: $500+/month**
 
-**Savings: ~$350-400/month vs managed solutions**
+**Savings: ~$410-420/month vs managed solutions**
 
 ## Why This Matters
 
