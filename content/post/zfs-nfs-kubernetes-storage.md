@@ -280,7 +280,8 @@ This gives you true HA storage with automatic failover, all managed with open-so
 
 **Our setup:**
 
-- **Data:** 1TB active K8s storage
+- **NFS Node:** 2 vCPU, 4GB RAM FreeBSD VM
+- **Data:** 1TB active K8s storage (with 998GB ZFS pool in staging, 97.5GB in production metadata)
 - **Snapshot storage:** 50GB additional (snapshots use copy-on-write)
 - **Hourly snapshots:** 72 retained (3 days)
 - **Daily replication:** <10 minutes (incremental only)
