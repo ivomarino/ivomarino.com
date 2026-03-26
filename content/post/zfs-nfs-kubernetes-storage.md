@@ -4,7 +4,7 @@ date = "2026-04-15T00:00:00-00:00"
 draft = true
 slug = "zfs-nfs-kubernetes-storage"
 tags = ["kubernetes", "storage", "infrastructure", "zfs", "nfs", "freebsd", "backup-series", "point-in-time-recovery", "reliability", "cost-efficiency"]
-summary = "Kubernetes storage is either ephemeral or expensive. We run FreeBSD + ZFS + NFS as our persistent storage backend for K8s. Hourly snapshots protect your data. Fast recovery. Zero vendor lock-in. Here's how we do it."
+summary = "Kubernetes storage is either ephemeral or expensive. We run a FreeBSD VM with ZFS + NFS in the same VPC as our K8s cluster. Hourly snapshots protect your data. Fast recovery. No vendor lock-in. Here's how we do it."
 comments = true
 image = "img/zfs-nfs-header.jpg"
 +++
@@ -13,9 +13,9 @@ Kubernetes storage is a problem with no good solution.
 
 Your options: store data in containers (lost on crash), use cloud storage (vendor lock-in, expensive), or manage your own NFS server (who wants that?).
 
-We built the fourth option: **FreeBSD + ZFS + NFS as our K8s storage backend**.
+We built the fourth option: **A FreeBSD VM running ZFS + NFS in the same VPC as our K8s cluster**.
 
-It's not flashy. It's not cloud-native. But it works.
+It's not flashy. It's not a managed service. But it works.
 
 ## The K8s Storage Problem
 
@@ -61,31 +61,32 @@ Snapshots are point-in-time views (zero-copy, instant creation). Incremental rep
 
 **FreeBSD - Stable storage platform**
 
-Best ZFS support (it was invented for Solaris, FreeBSD is the standard). Minimal overhead. NFS performance is excellent. Runs on cheap hardware (we use standard servers).
+Best ZFS support (it was invented for Solaris, FreeBSD is the standard). Minimal overhead. NFS performance is excellent. Runs on standard cloud VMs without bloat.
 
 Together: **automated data protection without the cost**.
 
 ## Real Architecture
 
-Here's the three-layer architecture:
+Everything runs in the same VPC. Here's the three-layer setup:
 
-**Layer 1: Kubernetes Clusters (Stage + Prod)**
+**Layer 1: Kubernetes Clusters (Stage + Prod) - Cloud VMs**
 
-Apps request storage via PersistentVolumeClaim. Kubernetes mounts standard NFS storage class.
+Apps request storage via PersistentVolumeClaim. Kubernetes mounts standard NFS storage class. Pods connect to the FreeBSD storage VM via internal VPC network.
 
-**Layer 2: Storage Nodes (FreeBSD + ZFS)**
+**Layer 2: Storage Node (Single FreeBSD VM in same VPC)**
 
 - Export: `/export/k8s-data` via NFS
-- Filesystem: `zroot/k8s-data`
+- Filesystem: `zroot/k8s-data` (ZFS with snapshots)
 - Snapshots: Hourly (automatically created, pruned after 3 days)
 - Protection: Point-in-time recovery ready
+- Access: Low-latency internal NFS connection (same VPC)
 
-**Layer 3: Offsite Replication**
+**Layer 3: Offsite Replication (External Storage)**
 
-- Target: rsync.net or similar offsite storage
-- Replication: Nightly incremental sends
+- Target: rsync.net or similar external offsite storage
+- Replication: Nightly incremental sends over WireGuard/SSH
 - Retention: Full dataset + 30 days of snapshots
-- Recovery: Clone offsite snapshot to new volume
+- Recovery: Clone offsite snapshot to new volume, mount as new PV
 
 ## How Snapshots Protect K8s Data
 
@@ -244,9 +245,10 @@ Run this daily via cron (3:15 AM, for example):
 
 **Cost:**
 
-- FreeBSD storage nodes: $2-3k hardware
+- FreeBSD VM (standard cloud instance): ~$50-100/month
 - Offsite storage: ~$50/month (rsync.net)
 - Kubernetes CSI driver: Free (open source)
+- **Total: ~$100-150/month**
 
 **vs. AWS EBS + backup solution:**
 
@@ -254,7 +256,7 @@ Run this daily via cron (3:15 AM, for example):
 - Backup service: $200+/month
 - **Total: $500+/month**
 
-**Our monthly cost: ~$50**
+**Savings: ~$350-400/month vs managed solutions**
 
 ## Why This Matters
 
@@ -269,20 +271,21 @@ You're not hoping the cloud provider backs up your data correctly. You're replic
 This isn't perfect for everyone:
 
 **Good for:**
-- On-premises Kubernetes
-- Private clusters (not cloud-hosted)
+- Self-managed Kubernetes (cloud VMs, on-premises, or hybrid)
+- Private clusters where you control the infrastructure
 - Applications that tolerate occasional brief NFS hiccups
-- Teams comfortable running their own storage
+- Teams comfortable managing their own storage layer
 
 **Not ideal for:**
-- Managed Kubernetes (can't provision your own storage nodes)
-- Multi-region requirements (NFS latency over WAN)
+- Managed Kubernetes services (GKE, EKS) where you can't provision your own VMs
+- Multi-region requirements (NFS latency across regions)
 - Applications requiring sub-millisecond latency (use local storage)
+- Completely serverless workloads (you need to manage the storage VM)
 
 ## The Lesson
 
-Don't assume cloud storage or enterprise backup tools are the only way. Sometimes the simplest infrastructure—FreeBSD, ZFS, NFS—gives you better data protection and costs less.
+Don't assume managed services or enterprise backup tools are the only way. A single FreeBSD VM with ZFS + NFS gives you better data protection and costs 3-4x less than managed cloud storage.
 
-The key: understand what you're protecting (point-in-time data), choose tools that do that well (ZFS snapshots), and automate everything.
+The key: understand what you're protecting (point-in-time data), choose tools that do that well (ZFS snapshots), and automate everything. Run it in the cloud, on-premises, or hybrid—the architecture works anywhere as long as your K8s cluster and storage node can talk on low-latency networks.
 
 That's how you survive.
