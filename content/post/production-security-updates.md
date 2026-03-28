@@ -26,24 +26,32 @@ The answer isn't to avoid updates. It's to control *when* you reboot.
 
 ## How Often Do Kernel Reboots Actually Happen?
 
-The short answer: more often than most people schedule them, less often than CVEs demand.
+Before we had a process: every time a critical CVE dropped, someone would check exploitability, escalate, and an emergency maintenance window would open 48-72 hours later.
 
-In 2025, Linux kernel CVEs hit 5,530—roughly 15 per day, up 28% from 2024. Not all of these require reboots, and not all are exploitable in your environment. But the pressure to patch is real and accelerating.
+What that actually looked like:
+- Monday: CVE published, CVSS 9.2
+- Wednesday: emergency change request approved
+- Thursday night: late-night maintenance window
+- 1am: storage node reboots, one jail doesn't come back
+- 2am: pages
 
-Practical reboot cadence by OS:
+After a couple of incidents like that, we stopped reacting per CVE.
 
-| OS | Patch update frequency | Reboot needed | Practical cadence |
-|----|----------------------|---------------|-------------------|
-| Debian / Ubuntu | Security patches every 2–4 weeks (Ubuntu 4/2 SRU cycle) | For kernel patches, yes | Monthly maintenance window |
-| FreeBSD | freebsd-update as patches land; 6-month releases | For base system updates | 2–4x per year |
-| OpenBSD | syspatch between releases; 6-month release cycle | After kernel patches | 1–2x per release cycle |
+**The key insight:** patching the kernel image doesn't affect the running kernel. The new kernel loads on next boot. That gap—between "patch applied" and "reboot happened"—is your breathing room. Use it.
 
-The distinction that matters: **packages** can be updated continuously without rebooting. The **kernel** requires a controlled reboot window.
+What we actually run now:
 
-The pattern that works:
-1. Apply package updates immediately (no risk, no reboot)
-2. Batch kernel reboots into scheduled maintenance windows (monthly or per release cycle)
-3. Never let CVE pressure force an unplanned reboot in production
+| OS | Reboot trigger | Frequency | Notes |
+|----|---------------|-----------|-------|
+| Debian | Kernel patches via security.debian.org | Monthly maintenance window | Patch lands immediately, reboot batched |
+| FreeBSD | freebsd-update base system | 2–4x per year | Packages update anytime, base reboots are infrequent |
+| OpenBSD | syspatch between 6-month releases | Per release cycle | Cleanest model—patches arrive infrequently by design |
+
+**Packages update continuously. Kernel reboots batch into windows.**
+
+The one exception: a CVE actively being exploited in the wild. That changes the calculus—immediate patch and fast-track the reboot. But check before you decide. Most critical-looking CVEs aren't exploitable in your environment. Check the exploitability score, check your exposure, then schedule accordingly.
+
+Unplanned reboots at 2am because of CVE anxiety cause more incidents than the CVEs themselves.
 
 ## The Three Systems
 
