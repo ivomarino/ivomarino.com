@@ -24,6 +24,27 @@ The pattern is the same: emergency security update → unplanned reboot → mult
 
 The answer isn't to avoid updates. It's to control *when* you reboot.
 
+## How Often Do Kernel Reboots Actually Happen?
+
+The short answer: more often than most people schedule them, less often than CVEs demand.
+
+In 2025, Linux kernel CVEs hit 5,530—roughly 15 per day, up 28% from 2024. Not all of these require reboots, and not all are exploitable in your environment. But the pressure to patch is real and accelerating.
+
+Practical reboot cadence by OS:
+
+| OS | Patch update frequency | Reboot needed | Practical cadence |
+|----|----------------------|---------------|-------------------|
+| Debian / Ubuntu | Security patches every 2–4 weeks (Ubuntu 4/2 SRU cycle) | For kernel patches, yes | Monthly maintenance window |
+| FreeBSD | freebsd-update as patches land; 6-month releases | For base system updates | 2–4x per year |
+| OpenBSD | syspatch between releases; 6-month release cycle | After kernel patches | 1–2x per release cycle |
+
+The distinction that matters: **packages** can be updated continuously without rebooting. The **kernel** requires a controlled reboot window.
+
+The pattern that works:
+1. Apply package updates immediately (no risk, no reboot)
+2. Batch kernel reboots into scheduled maintenance windows (monthly or per release cycle)
+3. Never let CVE pressure force an unplanned reboot in production
+
 ## The Three Systems
 
 Most production platforms run a heterogeneous mix:
