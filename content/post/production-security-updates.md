@@ -293,47 +293,20 @@ For production clusters (Kubernetes, FreeBSD storage nodes, OpenBSD gateways), n
 
 ### Real Cluster Orchestration
 
-```
-1. BACKUP FIRST (always)
-   └─ Snapshot storage, trigger off-cluster backup
+1. **Backup** — Snapshot storage, trigger off-cluster backup
 
-2. HOLD CRITICAL PACKAGES (Debian only)
-   └─ apt-mark hold docker-ce containerd.io
+2. **Hold critical packages** (Debian only) — `apt-mark hold docker-ce containerd.io kubelet`
 
-3. UPDATE PACKAGES on all nodes (no reboot yet)
-   └─ Debian: apt-get update && apt-get upgrade -y
-   └─ FreeBSD: pkg update -y && pkg upgrade -y
-   └─ OpenBSD: syspatch -a (handles itself)
+3. **Update all nodes** (packages, no reboot) — Run apt/pkg/syspatch on every node at once
 
-4. COORDINATE REBOOT SEQUENCE
-   └─ For each node in sequence:
+4. **Reboot each node individually:**
+   - Drain workloads (kubectl drain, stop services)
+   - Trigger reboot
+   - Wait for SSH to respond (verify boot succeeded)
+   - Restore workloads (uncordon, restart services)
+   - Monitor 5 minutes, check logs
 
-      a. DRAIN (cordon + evict workloads)
-         └─ kubectl drain <node> --ignore-daemonsets
-         └─ (FreeBSD: stop services; OpenBSD: drain connections)
-
-      b. REBOOT
-         └─ reboot now
-
-      c. WAIT FOR SSH (verify boot)
-         └─ for i in {1..60}; do
-              ssh <node> "echo ok" && break
-              sleep 5
-            done
-
-      d. RESTORE SERVICES
-         └─ kubectl uncordon <node>
-         └─ (FreeBSD: restart services; OpenBSD: verify rules loaded)
-
-      e. MONITOR
-         └─ Wait 2-5 minutes for stability
-         └─ Check logs for errors
-         └─ Proceed to next node
-
-5. UNHOLD AND VERIFY (Debian only)
-   └─ apt-mark unhold <package>
-   └─ All nodes healthy before next major package update
-```
+5. **Unhold packages** (Debian only) — `apt-mark unhold <package>` once all nodes are healthy
 
 ### Real Sequence Example
 
