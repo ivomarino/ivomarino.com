@@ -72,12 +72,8 @@ Debian is the most flexible. You can update packages without rebooting immediate
 ```bash
 #!/bin/bash
 set -e
-
 export DEBIAN_FRONTEND=noninteractive
-
-# Update package lists
 apt-get update
-
 # Upgrade packages (non-interactive)
 # --force-confold: Keep current config files
 # --force-confdef: Accept default on new config files
@@ -86,17 +82,13 @@ apt-get upgrade -y \
   -o Dpkg::Post-Install-Pkgs::=/usr/sbin/etckeeper \
   --allow-change-held-packages \
   -o Apt::AutoRemove::SuggestsImportant=false
-
-# Enable unattended-upgrades for security channel only
 apt-get install -y unattended-upgrades
-
 # Configure for security updates
 cat > /etc/apt/apt.conf.d/50unattended-upgrades <<'EOF'
 Unattended-Upgrade::Allowed-Origins {
   "${distro_id}:${distro_codename}-security";
 };
 EOF
-
 echo "Updates complete. Reboot when ready."
 ```
 
@@ -127,17 +119,12 @@ On Kubernetes:
 ```bash
 # Before upgrade
 kubectl drain <node> --ignore-daemonsets --delete-emptydir-data
-
 # Update (packages won't trigger reboot yet)
 apt-get update && apt-get upgrade -y
-
 # Unhold if coordinated cluster-wide upgrade
 apt-mark unhold docker-ce containerd.io
 # ... coordinate with other nodes
-
-# Reboot when all nodes ready
 reboot
-
 # Rejoin cluster
 kubectl uncordon <node>
 ```
@@ -151,39 +138,28 @@ OpenBSD has the cleanest security model: `syspatch` for kernel/base patches, `pk
 ```sh
 #!/bin/sh
 set -e
-
 echo "OpenBSD Security Updates"
-
 # Step 1: Check for patches
-echo "Checking for available patches..."
 syspatch -l
-
 # Step 2: Apply patches (dry-run first on critical systems)
 if [ "$1" = "--dry-run" ]; then
   echo "Dry-run mode: would apply patches"
   exit 0
 fi
-
-echo "Applying patches..."
 syspatch -a
-
 # Check if reboot is needed
 if [ -f /var/run/reboot-required ]; then
   echo "Reboot required. Run 'reboot' when ready."
   exit 0
 fi
-
 # Step 3: Update packages
-echo "Updating packages..."
 pkg_update -a
 pkg_add -u
-
 # Check again for reboot requirement
 if [ -f /var/run/reboot-required ]; then
   echo "Reboot required after package update."
   exit 0
 fi
-
 echo "All updates applied. No reboot required."
 ```
 
@@ -206,49 +182,34 @@ FreeBSD is the most complex: packages can be updated like Debian, but jails are 
 ```bash
 #!/bin/bash
 set -e
-
 echo "FreeBSD Security Updates"
-
 # Dry-run first on critical systems
 if [ "$1" = "--dry-run" ]; then
-  echo "Dry-run: would update packages"
   pkg audit -r
   pkg update -y -n
   exit 0
 fi
-
 # Step 1: Audit for known vulnerabilities
-echo "Checking for vulnerabilities..."
 pkg audit -r || true
-
 # Step 2: Update packages (non-interactive)
-echo "Updating packages..."
 pkg update -y
 pkg upgrade -y
-
 # Step 3: Update jails independently
 # Reduces blast radius—each jail upgraded separately
 if command -v bastille &>/dev/null; then
-  echo "Updating jails..."
-
-  # List all jails
   for jail in $(bastille list | tail -n +2 | awk '{print $1}'); do
-    echo "  Updating jail: $jail"
     bastille pkg "$jail" update -y
     bastille pkg "$jail" upgrade -y
   done
 fi
-
 # Step 4: freebsd-update (base system)
 # Only run if kernel patches available
-echo "Checking for base system updates..."
 if freebsd-update cron | grep -q "No updates are available"; then
   echo "  No base updates needed"
 else
   echo "  WARNING: freebsd-update requires manual review"
   echo "  Run: freebsd-update fetch && freebsd-update install"
 fi
-
 echo "Updates complete."
 ```
 
@@ -259,7 +220,6 @@ Jails are FreeBSD's containerization. Updating host + jails simultaneously is da
 ```bash
 # Update host packages only
 pkg update -y && pkg upgrade -y
-
 # Update each jail independently
 # Reduces blast radius—if jail fails, host is fine
 for jail in app-01 app-02 app-03; do
@@ -275,11 +235,8 @@ For major releases (13.0 → 13.1), use ZFS boot environments:
 ```bash
 # Create a new boot environment (atomic rollback)
 bectl create upgrade-candidate
-
 # Activate it (next reboot)
 bectl activate upgrade-candidate
-
-# Boot into it
 reboot
 
 # If it fails, revert atomically
@@ -318,18 +275,12 @@ SSH_TIMEOUT=300
 
 for node in "${NODES[@]}"; do
   echo "=== Updating $node ==="
-
   # Drain workloads
-  echo "  Draining..."
   kubectl drain "$node" --ignore-daemonsets --delete-emptydir-data \
     --timeout=${DRAIN_TIMEOUT}s
-
   # Trigger reboot
-  echo "  Rebooting..."
   ssh "$node" "reboot" || true
-
   # Wait for boot
-  echo "  Waiting for boot..."
   start_time=$(date +%s)
   while true; do
     if ssh "$node" "echo ok" 2>/dev/null; then
@@ -343,15 +294,10 @@ for node in "${NODES[@]}"; do
     fi
     sleep 5
   done
-
   # Restore
-  echo "  Uncordoning..."
   kubectl uncordon "$node"
-
   # Wait for stability
-  echo "  Stabilizing (5 min)..."
   sleep 300
-
   echo "  ✓ $node complete"
 done
 
