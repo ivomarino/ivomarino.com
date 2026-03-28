@@ -1,7 +1,7 @@
 +++
 title = "Production Security Updates Without Downtime: Debian, FreeBSD, and OpenBSD"
 date = "2026-03-28T00:00:00-00:00"
-draft = true
+draft = false
 slug = "production-security-updates"
 tags = ["infrastructure", "operations", "security", "debian", "freebsd", "openbsd", "automation", "platform-engineering"]
 summary = "Security patches can't wait, but unplanned reboots break production. The update runbook for Debian, FreeBSD, and OpenBSD — with real scripts, hold patterns, and a zero-downtime cluster update sequence."
