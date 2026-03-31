@@ -1,6 +1,6 @@
 +++
 title = "Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time"
-date = "2026-04-05T00:00:00-00:00"
+date = "2026-03-31T00:00:00-00:00"
 draft = false
 slug = "keda-queue-autoscaling"
 tags = ["autoscaling-series", "kubernetes", "operations", "keda", "rabbitmq", "event-driven", "queue-based", "autoscaling", "cost-efficiency"]
