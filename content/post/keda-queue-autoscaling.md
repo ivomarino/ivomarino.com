@@ -1,7 +1,7 @@
 +++
 title = "Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time"
 date = "2026-04-05T00:00:00-00:00"
-draft = true
+draft = false
 slug = "keda-queue-autoscaling"
 tags = ["autoscaling-series", "kubernetes", "operations", "keda", "rabbitmq", "event-driven", "queue-based", "autoscaling", "cost-efficiency"]
 summary = "Kubernetes HPA with CPU metrics fails for queue-based workloads. Learn why queue depth is the right signal, how KEDA makes event-driven autoscaling trivial, and the configuration that reduced processing latency from 45 minutes to 5-15 minutes with zero manual scaling."
