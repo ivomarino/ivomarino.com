@@ -1077,6 +1077,7 @@ body:not(.post-template) .post-title {
 
 .post-title a {
     text-decoration: none;
+    color: #000; /* Light mode: black text */
 }
 
 [data-theme="dark"] .post-title a {
