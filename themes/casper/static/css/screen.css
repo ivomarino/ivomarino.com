@@ -1083,6 +1083,11 @@ body:not(.post-template) .post-title {
     color: var(--text-heading);
 }
 
+/* Light mode: post titles should be black, not blue links */
+body:not([data-theme="dark"]) .post-title a {
+    color: #000;
+}
+
 .post-excerpt p {
     margin: 0;
     font-size: 0.9em;
