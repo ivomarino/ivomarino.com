@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Scaling on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/scaling/</link>
+    <description>Recent content in Scaling on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Mon, 23 Mar 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/scaling/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Scaling MySQL Beyond Kubernetes: When Backups Become The Blocker</title>
+      <link>https://ivomarino.com/post/mysql-scaling-beyond-k8s/</link>
+      <pubDate>Mon, 23 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/mysql-scaling-beyond-k8s/</guid>
+      <description>We ran MySQL in Kubernetes for years until the data scaled from GB to TB. Kubernetes wasn&amp;rsquo;t the problem—backups were. Kasten (the Kubernetes backup tool) was never designed for databases at our scale. Learn why we moved MySQL off Kubernetes and the backup solution we built to solve this infrastructure challenge.</description>
+    </item>
+  </channel>
+</rss>

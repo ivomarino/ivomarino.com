@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" XtraBackup &#43; S3: Enterprise Database Backup Strategy &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="http://192.168.160.249:1313/post/xtrabackup-s3-enterprise-backups/" />
+    <meta property="og:image" content="http://192.168.160.249:1313/img/xtrabackup-header.jpg" />
+    <meta property="og:description" content="Database backups at TB scale require incremental backups with intelligent chain management. Learn how XtraBackup &#43; S3 storage with chain-aware retention solves point-in-time recovery without the cost of managed backup solutions. Includes automation patterns used in production." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-04-01T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="backup-series" />
+    
+    <meta property="og:article:tag" content="database" />
+    
+    <meta property="og:article:tag" content="backups" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="mysql" />
+    
+    <meta property="og:article:tag" content="xtrabackup" />
+    
+    <meta property="og:article:tag" content="s3" />
+    
+    <meta property="og:article:tag" content="incremental-backup" />
+    
+    <meta property="og:article:tag" content="point-in-time-recovery" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     XtraBackup &#43; S3: Enterprise Database Backup Strategy &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="http://192.168.160.249:1313/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="http://192.168.160.249:1313/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="http://192.168.160.249:1313/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="http://192.168.160.249:1313/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="http://192.168.160.249:1313/post/xtrabackup-s3-enterprise-backups/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="http://192.168.160.249:1313/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(http://192.168.160.249:1313/img/xtrabackup-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="http://192.168.160.249:1313/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">XtraBackup &#43; S3: Enterprise Database Backup Strategy</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-04-01T00:00:00Z">
+            Apr 1, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backup-series/">#backup-series</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/database/">#database</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backups/">#backups</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/mysql/">#mysql</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/xtrabackup/">#xtrabackup</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/s3/">#s3</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/incremental-backup/">#incremental-backup</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/point-in-time-recovery/">#point-in-time-recovery</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>In the previous post, we moved MySQL off Kubernetes when backups became the blocker at TB scale. But moving to VMs was just the first step.</p>
+<p>Now came the real problem: how do you actually back up a TB-scale database efficiently?</p>
+<h2 id="the-backup-problem-at-scale">The Backup Problem at Scale</h2>
+<p>Full backups don&rsquo;t work when your database is large:</p>
+<ul>
+<li>A 500GB MySQL backup takes hours</li>
+<li>Running that every day is wasteful (most data hasn&rsquo;t changed)</li>
+<li>Running it weekly leaves a 6-day recovery window (unacceptable)</li>
+<li>Storage costs explode (full backup every day = 500GB × 7 = 3.5TB/week)</li>
+</ul>
+<p>You need incremental backups. But incremental backups are complicated:</p>
+<ul>
+<li>Every incremental depends on its base backup</li>
+<li>Delete the base = all incrementals become worthless</li>
+<li>Most backup tools don&rsquo;t understand these dependencies</li>
+<li>People accidentally delete base backups while incrementals still reference them</li>
+</ul>
+<p>The second problem: Point-in-time recovery (PITR) requires the complete chain.</p>
+<p>If you want to restore to &ldquo;2:45 PM on March 15&rdquo;, you need:</p>
+<ol>
+<li>The full backup from whenever it was taken</li>
+<li>Every incremental backup up to 2:45 PM</li>
+<li>Binary logs to replay until the exact timestamp</li>
+</ol>
+<p>Miss one incremental? Recovery fails.</p>
+<h2 id="why-xtrabackup--s3">Why XtraBackup + S3</h2>
+<p>We chose this approach for three reasons:</p>
+<p><strong>1. Chain-Aware Retention</strong></p>
+<p>Most backup tools only look at backup age: &ldquo;this backup is 8 days old, delete it.&rdquo; They don&rsquo;t check if other backups depend on it.</p>
+<p>XtraBackup includes all metadata in filenames and tracking. We built retention logic that says: &ldquo;only delete a backup if nothing depends on it AND it&rsquo;s older than 7 days.&rdquo;</p>
+<p><strong>2. Local-First Recovery</strong></p>
+<p>Keeping the most recent backups locally on SSD means recovery is seconds, not minutes. S3 is the archive copy for compliance and offsite resilience.</p>
+<p><strong>3. Cost</strong></p>
+<p>A managed backup solution (AWS Backup, Commvault) costs $150+/month for 150GB of backups. Our solution:</p>
+<ul>
+<li>S3 storage: ~$3/month</li>
+<li>Infrastructure: already have the backup host</li>
+<li>Automation: scripts handle retention and verification</li>
+</ul>
+<p><strong>4. Multi-Database Support</strong></p>
+<p>The same scripts work for MySQL 8.0, Percona, MariaDB standalone, and MariaDB Galera clusters. The tool auto-detects which to use.</p>
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="three-scripts">Three Scripts</h3>
+<p>We use three scripts from the <a href="https://github.com/floadsio/syseng/tree/main/mysql/xtrabackup-s3">floads/syseng repository</a>:</p>
+<p><strong>xtrabackup-s3.sh</strong> — Takes backups</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Full backup (with cleanup of old chains)</span>
+</span></span><span style="display:flex;"><span>xtrabackup-s3.sh full --cleanup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Incremental backup (automatically chains to latest full)</span>
+</span></span><span style="display:flex;"><span>xtrabackup-s3.sh inc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Sync all backups to S3</span>
+</span></span><span style="display:flex;"><span>xtrabackup-s3.sh sync-all
+</span></span></code></pre></div><p><strong>xtrabackup-s3-restore.sh</strong> — Restores backups</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Restore single backup</span>
+</span></span><span style="display:flex;"><span>restore-backup 2026-03-15_08-57-49_full_1750928269
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Restore entire chain (full + all incrementals)</span>
+</span></span><span style="display:flex;"><span>restore-chain 2026-03-15_08-57-49_full_1750928269
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Point-in-time recovery</span>
+</span></span><span style="display:flex;"><span>restore-chain full_name incremental_name_at_target_time
+</span></span></code></pre></div><p><strong>xtrabackup-s3-check.sh</strong> — Analyzes chain health</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Show backup storage breakdown</span>
+</span></span><span style="display:flex;"><span>analyze-chains
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># List all backups with sizes</span>
+</span></span><span style="display:flex;"><span>list
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Verify entire chain integrity</span>
+</span></span><span style="display:flex;"><span>check backup-name
+</span></span></code></pre></div><h3 id="backup-naming--chain-management">Backup Naming &amp; Chain Management</h3>
+<p>Backups are named to encode their relationships:</p>
+<ul>
+<li>Full backup: <code>YYYY-MM-DD_HH-MM-SS_full_TIMESTAMP</code></li>
+<li>Incremental: <code>inc_base-BASE_TIMESTAMP_inc_TIMESTAMP</code></li>
+</ul>
+<p>Example chain:</p>
+<pre tabindex="0"><code>2026-03-15_02-00-00_full_1741000000         (full)
+  └── inc_base-1741000000_inc_1741018000    (inc 5 hours later)
+  └── inc_base-1741000000_inc_1741036000    (inc 10 hours later)
+  └── inc_base-1741000000_inc_1741054000    (inc 15 hours later)
+</code></pre><p>To restore to 2:45 PM, you apply the full backup + the third incremental + replay binary logs for 45 minutes.</p>
+<p>All backups are encrypted (AES-256) and compressed (zstd).</p>
+<h3 id="automation-pattern">Automation Pattern</h3>
+<p><strong>Weekly schedule:</strong></p>
+<ul>
+<li>Sunday 2 AM: Full backup, delete chains older than 7 days</li>
+<li>Monday-Saturday every 6 hours: Incremental backup</li>
+<li>Weekly: Run chain analysis, verify storage breakdown</li>
+</ul>
+<p><strong>Local-first approach:</strong></p>
+<ol>
+<li>Write backup to <code>/mnt/backup</code> (SSD, fast)</li>
+<li>Verify backup integrity locally</li>
+<li>Sync to S3 asynchronously (happens in background)</li>
+<li>Recovery checks local first, falls back to S3</li>
+</ol>
+<p><strong>Chain retention logic:</strong></p>
+<pre tabindex="0"><code>Only delete a backup if:
+  AND all downstream backups are also &gt;7 days old
+  AND no incremental backups reference it
+</code></pre><p>This prevents orphaned incrementals (incrementals without a base) while still cleaning up old data.</p>
+<h2 id="real-numbers">Real Numbers</h2>
+<h3 id="storage-example">Storage Example</h3>
+<p>A production setup backing up MariaDB Galera cluster:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total full backups</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Total incremental backups</td>
+<td>23</td>
+</tr>
+<tr>
+<td>Local storage</td>
+<td>15GB</td>
+</tr>
+<tr>
+<td>S3 storage</td>
+<td>142GB</td>
+</tr>
+<tr>
+<td>Total backup space</td>
+<td>157GB</td>
+</tr>
+<tr>
+<td>Compressed + encrypted</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="recovery-time">Recovery Time</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full restore from local SSD</td>
+<td>&lt;5 minutes</td>
+</tr>
+<tr>
+<td>Full restore from S3</td>
+<td>15-20 minutes</td>
+</tr>
+<tr>
+<td>Point-in-time recovery</td>
+<td>Add &lt;5 minutes for replay</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cost-comparison">Cost Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>Solution</th>
+<th>Cost</th>
+<th>Storage</th>
+<th>PITR</th>
+<th>Chains</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AWS Backup</td>
+<td>~$150/month</td>
+<td>150GB</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>This solution</td>
+<td>~$3/month</td>
+<td>150GB</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>The human cost is minimal because:</p>
+<ul>
+<li>Backups run via cron (automated)</li>
+<li>Retention is automatic (chain-aware logic)</li>
+<li>Recovery procedures are tested monthly</li>
+</ul>
+<h2 id="operations-in-production">Operations in Production</h2>
+<h3 id="monitoring-backups">Monitoring Backups</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Check if backups are running on schedule</span>
+</span></span><span style="display:flex;"><span>tail -50 /var/log/xtrabackup-backup.log
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Show chain breakdown and storage usage</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3-check.sh analyze-chains
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># List all available backups</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3-check.sh list
+</span></span></code></pre></div><h3 id="manual-backup-trigger">Manual Backup Trigger</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Force full backup immediately (instead of waiting for Sunday)</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3.sh full --cleanup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Force incremental backup</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3.sh inc
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Manually sync to S3</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3.sh sync-all
+</span></span></code></pre></div><h3 id="recovery-procedure">Recovery Procedure</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># List available backups</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3-check.sh list
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Restore entire chain to /mnt/restore</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3-restore.sh restore-chain <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  2026-03-15_02-00-00_full_1741000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Verify restored data</span>
+</span></span><span style="display:flex;"><span>ls -lah /mnt/restore/
+</span></span><span style="display:flex;"><span>file /mnt/restore/*
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Start MySQL from restored data</span>
+</span></span><span style="display:flex;"><span>mysql -u root -p --socket<span style="color:#f92672">=</span>/mnt/restore/mysql.sock
+</span></span></code></pre></div><h3 id="chain-integrity-checks">Chain Integrity Checks</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Verify entire chain is present and uncorrupted</span>
+</span></span><span style="display:flex;"><span>/usr/local/bin/xtrabackup-s3-check.sh check <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  2026-03-15_02-00-00_full_1741000000
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># This verifies:</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># - Base full backup exists and is readable</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># - All incremental backups reference valid base</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># - All files have valid checksums</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># - Compression and encryption integrity</span>
+</span></span></code></pre></div><h2 id="what-we-learned">What We Learned</h2>
+<p><strong>1. Incremental backups require discipline.</strong></p>
+<p>You can&rsquo;t just delete backups arbitrarily. One mistake (deleting a base full backup) orphans all downstream incrementals. We built chain-aware retention to make this automatic.</p>
+<p><strong>2. Naming matters.</strong></p>
+<p>By encoding the backup relationships in the filename (<code>inc_base-TIMESTAMP_inc_TIMESTAMP</code>), we can reconstruct the chain automatically. This is simpler than external database tracking.</p>
+<p><strong>3. Test recovery procedures.</strong></p>
+<p>We restore a random backup monthly from S3 (not local) to verify:</p>
+<ul>
+<li>S3 uploads worked correctly</li>
+<li>Restore procedures actually work</li>
+<li>Recovery time estimates are realistic</li>
+</ul>
+<p>Finding recovery failures in production is unacceptable.</p>
+<p><strong>4. Local-first + S3 archive is the sweet spot.</strong></p>
+<ul>
+<li>Local: Fast recovery when you need it (minutes)</li>
+<li>S3: Immutable archive for compliance (can&rsquo;t be accidentally deleted)</li>
+<li>Costs: 1/3 of managed solutions</li>
+<li>Automation: Fully scripted, no manual intervention</li>
+</ul>
+<p><strong>5. Automate retention or humans will skip backups.</strong></p>
+<p>When retention is manual (&ldquo;someone remember to delete old backups&rdquo;), it doesn&rsquo;t happen. Automated chain-aware retention is reliable.</p>
+<h2 id="next-the-complete-backup-strategy">Next: The Complete Backup Strategy</h2>
+<p>This post shows the database-specific solution. In the next post, we&rsquo;ll show the complete three-layer backup strategy:</p>
+<ol>
+<li><strong>ZFS snapshots</strong> for infrastructure (fast, incremental)</li>
+<li><strong>Restic backups</strong> for immutable offsite copies</li>
+<li><strong>S3 archive</strong> for long-term compliance</li>
+</ol>
+<p>Together, these three layers give you defense-in-depth: fast local recovery, offsite immutable backups, and compliance-ready archives.</p>
+<hr>
+<p><strong>GitHub Implementation:</strong> <a href="https://github.com/floadsio/syseng/tree/main/mysql/xtrabackup-s3">floads/syseng — mysql/xtrabackup-s3</a></p>
+<p>Includes:</p>
+<ul>
+<li><code>xtrabackup-s3.sh</code> — Backup script with chain-aware retention</li>
+<li><code>xtrabackup-s3-restore.sh</code> — Restore entire chains or PITR</li>
+<li><code>xtrabackup-s3-check.sh</code> — Analyze chains and verify integrity</li>
+<li>Cron job examples and automation patterns</li>
+</ul>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/index.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/theme.js"></script>
+
+</body>
+</html>
+

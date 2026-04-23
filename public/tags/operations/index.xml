@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Operations on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/operations/</link>
+    <description>Recent content in Operations on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Thu, 23 Apr 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/operations/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Out-of-Band SSH Tunnel Failover: Why Stability Beats Speed</title>
+      <link>https://ivomarino.com/post/2026-04-23-gateway-failover-ssh-tunnels/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/2026-04-23-gateway-failover-ssh-tunnels/</guid>
+      <description>Building reliable automatic gateway failover for critical infrastructure recovery access. How naive health checks broke everything, and why a 30-second stable recovery is better than a 5-second flapping failover.</description>
+    </item>
+    <item>
+      <title>Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time</title>
+      <link>https://ivomarino.com/post/keda-queue-autoscaling/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/keda-queue-autoscaling/</guid>
+      <description>Kubernetes HPA with CPU metrics fails for queue-based workloads. Learn why queue depth is the right signal, how KEDA makes event-driven autoscaling trivial, and the configuration that reduced processing latency from 45 minutes to 5-15 minutes with zero manual scaling.</description>
+    </item>
+    <item>
+      <title>Production Security Updates Without Downtime: Debian, FreeBSD, and OpenBSD</title>
+      <link>https://ivomarino.com/post/production-security-updates/</link>
+      <pubDate>Sat, 28 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/production-security-updates/</guid>
+      <description>Security patches can&amp;rsquo;t wait, but unplanned reboots break production. The update runbook for Debian, FreeBSD, and OpenBSD — with real scripts, hold patterns, and a zero-downtime cluster update sequence.</description>
+    </item>
+    <item>
+      <title>OpenBSD CARP Firewalls in Front of a Private Kubernetes Cluster</title>
+      <link>https://ivomarino.com/post/openbsd-carp-k8s-firewall/</link>
+      <pubDate>Wed, 25 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/openbsd-carp-k8s-firewall/</guid>
+      <description>We run two OpenBSD firewalls in CARP HA mode in front of a private Kubernetes cluster. Sub-second failover, full state sync, and pf rules that load-balance across worker nodes.</description>
+    </item>
+    <item>
+      <title>Scaling MySQL Beyond Kubernetes: When Backups Become The Blocker</title>
+      <link>https://ivomarino.com/post/mysql-scaling-beyond-k8s/</link>
+      <pubDate>Mon, 23 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/mysql-scaling-beyond-k8s/</guid>
+      <description>We ran MySQL in Kubernetes for years until the data scaled from GB to TB. Kubernetes wasn&amp;rsquo;t the problem—backups were. Kasten (the Kubernetes backup tool) was never designed for databases at our scale. Learn why we moved MySQL off Kubernetes and the backup solution we built to solve this infrastructure challenge.</description>
+    </item>
+    <item>
+      <title>2026 Relaunch: Infrastructure Lessons from 10&#43; Years Running Production</title>
+      <link>https://ivomarino.com/post/relaunch/</link>
+      <pubDate>Thu, 01 Jan 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/relaunch/</guid>
+      <description>Relaunching with a focus on pragmatic infrastructure: backup strategies, Kubernetes autoscaling, and lessons from 10+ years of production operations.</description>
+    </item>
+  </channel>
+</rss>

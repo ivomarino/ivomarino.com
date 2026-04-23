@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Replication on ivomarino.com</title>
+    <link>http://localhost:46569/tags/replication/</link>
+    <description>Recent content in Replication on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Fri, 01 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:46569/tags/replication/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ZFS Offsite Backups on FreeBSD: Incremental Replication at Scale</title>
+      <link>http://localhost:46569/post/zfs-offsite-backups/</link>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/zfs-offsite-backups/</guid>
+      <description>ZFS snapshots are the foundation for efficient backups. Learn how to replicate them to offsite targets at scale using zfs-autobackup, from simple pairs (lab scale) to hub-and-spoke architectures (production). Includes real numbers and deployment patterns for 1TB+ datasets with minute-level incremental backups.</description>
+    </item>
+  </channel>
+</rss>

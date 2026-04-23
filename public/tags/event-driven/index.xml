@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Event-Driven on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/event-driven/</link>
+    <description>Recent content in Event-Driven on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Tue, 31 Mar 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/event-driven/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time</title>
+      <link>https://ivomarino.com/post/keda-queue-autoscaling/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/keda-queue-autoscaling/</guid>
+      <description>Kubernetes HPA with CPU metrics fails for queue-based workloads. Learn why queue depth is the right signal, how KEDA makes event-driven autoscaling trivial, and the configuration that reduced processing latency from 45 minutes to 5-15 minutes with zero manual scaling.</description>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" Production Security Updates Without Downtime: Debian, FreeBSD, and OpenBSD &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="https://ivomarino.com/post/production-security-updates/" />
+    <meta property="og:image" content="https://ivomarino.com/img/security-updates-header.jpg" />
+    <meta property="og:description" content="Security patches can&#39;t wait, but unplanned reboots break production. The update runbook for Debian, FreeBSD, and OpenBSD — with real scripts, hold patterns, and a zero-downtime cluster update sequence." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-03-28T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="infrastructure" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="security" />
+    
+    <meta property="og:article:tag" content="debian" />
+    
+    <meta property="og:article:tag" content="freebsd" />
+    
+    <meta property="og:article:tag" content="openbsd" />
+    
+    <meta property="og:article:tag" content="automation" />
+    
+    <meta property="og:article:tag" content="platform-engineering" />
+    
+    
+
+  <title>
+     Production Security Updates Without Downtime: Debian, FreeBSD, and OpenBSD &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://ivomarino.com/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="https://ivomarino.com/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="https://ivomarino.com/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="https://ivomarino.com/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="https://ivomarino.com/post/production-security-updates/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="https://ivomarino.com/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(https://ivomarino.com/img/security-updates-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="https://ivomarino.com/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">Production Security Updates Without Downtime: Debian, FreeBSD, and OpenBSD</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-03-28T00:00:00Z">
+            Mar 28, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/infrastructure/">#infrastructure</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/security/">#security</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/debian/">#debian</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/freebsd/">#freebsd</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/openbsd/">#openbsd</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/automation/">#automation</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/platform-engineering/">#platform-engineering</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <h2 id="the-problem">The Problem</h2>
+<p>CVEs can&rsquo;t wait. A zero-day lands on Monday morning—you have hours to patch before exploits hit. But unplanned reboots at midnight kill production.</p>
+<p>What actually breaks:</p>
+<ul>
+<li><strong>Kubernetes nodes upgrading Docker mid-cluster:</strong> Container runtime gets yanked, all pods evicted</li>
+<li><strong>FreeBSD jails losing network:</strong> Reboot without coordination means NFS disconnects, databases go down</li>
+<li><strong>DRBD torn down:</strong> Storage replication stops, failover doesn&rsquo;t work</li>
+<li><strong>Storage nodes offline simultaneously:</strong> Everything on the cluster loses disks at once</li>
+</ul>
+<p>The pattern is the same: emergency security update → unplanned reboot → multiple cascading failures → 2am pages.</p>
+<p>The answer isn&rsquo;t to avoid updates. It&rsquo;s to control <em>when</em> you reboot.</p>
+<h2 id="how-often-do-kernel-reboots-actually-happen">How Often Do Kernel Reboots Actually Happen?</h2>
+<p>Before we had a process: every time a critical CVE dropped, someone would check exploitability, escalate, and an emergency maintenance window would open 48-72 hours later.</p>
+<p>What that actually looked like:</p>
+<ul>
+<li>Monday: CVE published, CVSS 9.2</li>
+<li>Wednesday: emergency change request approved</li>
+<li>Thursday night: late-night maintenance window</li>
+<li>1am: storage node reboots, one jail doesn&rsquo;t come back</li>
+<li>2am: pages</li>
+</ul>
+<p>After a couple of incidents like that, we stopped reacting per CVE.</p>
+<p><strong>The key insight:</strong> patching the kernel image doesn&rsquo;t affect the running kernel. The new kernel loads on next boot. That gap—between &ldquo;patch applied&rdquo; and &ldquo;reboot happened&rdquo;—is your breathing room. Use it.</p>
+<p>What we actually run now:</p>
+<table>
+<thead>
+<tr>
+<th>OS</th>
+<th>Reboot trigger</th>
+<th>Frequency</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Debian</td>
+<td>Kernel patches via security.debian.org</td>
+<td>Monthly maintenance window</td>
+<td>Patch lands immediately, reboot batched</td>
+</tr>
+<tr>
+<td>FreeBSD</td>
+<td>freebsd-update base system</td>
+<td>2–4x per year</td>
+<td>Packages update anytime, base reboots are infrequent</td>
+</tr>
+<tr>
+<td>OpenBSD</td>
+<td>syspatch between 6-month releases</td>
+<td>Per release cycle</td>
+<td>Cleanest model—patches arrive infrequently by design</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Packages update continuously. Kernel reboots batch into windows.</strong></p>
+<p>The one exception: a CVE actively being exploited in the wild. That changes the calculus—immediate patch and fast-track the reboot. But check before you decide. Most critical-looking CVEs aren&rsquo;t exploitable in your environment. Check the exploitability score, check your exposure, then schedule accordingly.</p>
+<p>Unplanned reboots at 2am because of CVE anxiety cause more incidents than the CVEs themselves.</p>
+<h2 id="the-three-systems">The Three Systems</h2>
+<p>Most production platforms run a heterogeneous mix:</p>
+<ul>
+<li><strong>Debian:</strong> Compute nodes, Kubernetes, app servers, load balancers</li>
+<li><strong>FreeBSD:</strong> Storage, jails (containerization), stateful services, database servers</li>
+<li><strong>OpenBSD:</strong> Edge, firewalls, proxies, security-critical gateways</li>
+</ul>
+<p>Each OS has a different security update model, different patch mechanisms, and different reboot triggers. A one-size-fits-all approach fails.</p>
+<h2 id="debian-non-interactive-updates">Debian: Non-Interactive Updates</h2>
+<p>Debian is the most flexible. You can update packages without rebooting immediately—the kernel patch stays pending until you&rsquo;re ready.</p>
+<h3 id="the-pattern">The Pattern</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set -e
+</span></span><span style="display:flex;"><span>export DEBIAN_FRONTEND<span style="color:#f92672">=</span>noninteractive
+</span></span><span style="display:flex;"><span>apt-get update
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Upgrade packages (non-interactive)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># --force-confold: Keep current config files</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># --force-confdef: Accept default on new config files</span>
+</span></span><span style="display:flex;"><span>apt-get upgrade -y <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -o Dpkg::Pre-Install-Pkgs::<span style="color:#f92672">=</span>/usr/sbin/etckeeper <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -o Dpkg::Post-Install-Pkgs::<span style="color:#f92672">=</span>/usr/sbin/etckeeper <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --allow-change-held-packages <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  -o Apt::AutoRemove::SuggestsImportant<span style="color:#f92672">=</span>false
+</span></span><span style="display:flex;"><span>apt-get install -y unattended-upgrades
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Configure for security updates</span>
+</span></span><span style="display:flex;"><span>cat &gt; /etc/apt/apt.conf.d/50unattended-upgrades <span style="color:#e6db74">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">Unattended-Upgrade::Allowed-Origins {
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  &#34;${distro_id}:${distro_codename}-security&#34;;
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">};
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">EOF</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Updates complete. Reboot when ready.&#34;</span>
+</span></span></code></pre></div><h3 id="key-insight-hold-critical-packages">Key Insight: Hold Critical Packages</h3>
+<p>On compute nodes, Docker/Containerd updates are dangerous mid-cluster:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Hold packages that shouldn&#39;t upgrade without coordination</span>
+</span></span><span style="display:flex;"><span>apt-mark hold docker-ce containerd.io
+</span></span><span style="display:flex;"><span>apt-mark hold kubeadm kubectl kubelet
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Run the standard upgrade</span>
+</span></span><span style="display:flex;"><span>apt-get update <span style="color:#f92672">&amp;&amp;</span> apt-get upgrade -y
+</span></span></code></pre></div><p>Hold is critical. It lets you:</p>
+<ol>
+<li>Update security packages on all nodes (fast, safe)</li>
+<li>Schedule Docker/Containerd upgrades separately</li>
+<li>Drain the node, upgrade, rejoin the cluster</li>
+<li>Repeat per node in a controlled sequence</li>
+</ol>
+<h3 id="the-cluster-window">The Cluster Window</h3>
+<p>On Kubernetes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Before upgrade</span>
+</span></span><span style="display:flex;"><span>kubectl drain &lt;node&gt; --ignore-daemonsets --delete-emptydir-data
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Update (packages won&#39;t trigger reboot yet)</span>
+</span></span><span style="display:flex;"><span>apt-get update <span style="color:#f92672">&amp;&amp;</span> apt-get upgrade -y
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Unhold if coordinated cluster-wide upgrade</span>
+</span></span><span style="display:flex;"><span>apt-mark unhold docker-ce containerd.io
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ... coordinate with other nodes</span>
+</span></span><span style="display:flex;"><span>reboot
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Rejoin cluster</span>
+</span></span><span style="display:flex;"><span>kubectl uncordon &lt;node&gt;
+</span></span></code></pre></div><h2 id="openbsd-syspatch--pkgupdate">OpenBSD: syspatch + pkgupdate</h2>
+<p>OpenBSD has the cleanest security model: <code>syspatch</code> for kernel/base patches, <code>pkgupdate</code> for packages.</p>
+<h3 id="the-pattern-1">The Pattern</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/sh
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set -e
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;OpenBSD Security Updates&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 1: Check for patches</span>
+</span></span><span style="display:flex;"><span>syspatch -l
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 2: Apply patches (dry-run first on critical systems)</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> <span style="color:#e6db74">&#34;</span>$1<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;--dry-run&#34;</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;Dry-run mode: would apply patches&#34;</span>
+</span></span><span style="display:flex;"><span>  exit <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>syspatch -a
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check if reboot is needed</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -f /var/run/reboot-required <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;Reboot required. Run &#39;reboot&#39; when ready.&#34;</span>
+</span></span><span style="display:flex;"><span>  exit <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 3: Update packages</span>
+</span></span><span style="display:flex;"><span>pkg_update -a
+</span></span><span style="display:flex;"><span>pkg_add -u
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check again for reboot requirement</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> -f /var/run/reboot-required <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;Reboot required after package update.&#34;</span>
+</span></span><span style="display:flex;"><span>  exit <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;All updates applied. No reboot required.&#34;</span>
+</span></span></code></pre></div><h3 id="key-insight-reboot-detection">Key Insight: Reboot Detection</h3>
+<p>OpenBSD creates <code>/var/run/reboot-required</code> when the kernel is patched. You can:</p>
+<ol>
+<li><strong>Check before rebooting:</strong> <code>[ -f /var/run/reboot-required ] &amp;&amp; echo &quot;Reboot needed&quot;</code></li>
+<li><strong>Run the script again post-reboot:</strong> It detects completion and moves to packages</li>
+<li><strong>Handle gracefully:</strong> Never surprise-reboots mid-cluster</li>
+</ol>
+<p>This is the best model of the three OSes.</p>
+<h2 id="freebsd-packages-jails-and-base-updates">FreeBSD: Packages, Jails, and Base Updates</h2>
+<p>FreeBSD is the most complex: packages can be updated like Debian, but jails are isolated containers, and base system (kernel) updates require careful coordination.</p>
+<h3 id="the-pattern-2">The Pattern</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>set -e
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;FreeBSD Security Updates&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Dry-run first on critical systems</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> <span style="color:#e6db74">&#34;</span>$1<span style="color:#e6db74">&#34;</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;--dry-run&#34;</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  pkg audit -r
+</span></span><span style="display:flex;"><span>  pkg update -y -n
+</span></span><span style="display:flex;"><span>  exit <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 1: Audit for known vulnerabilities</span>
+</span></span><span style="display:flex;"><span>pkg audit -r <span style="color:#f92672">||</span> true
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 2: Update packages (non-interactive)</span>
+</span></span><span style="display:flex;"><span>pkg update -y
+</span></span><span style="display:flex;"><span>pkg upgrade -y
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 3: Update jails independently</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Reduces blast radius—each jail upgraded separately</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> command -v bastille &amp;&gt;/dev/null; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">for</span> jail in <span style="color:#66d9ef">$(</span>bastille list | tail -n +2 | awk <span style="color:#e6db74">&#39;{print $1}&#39;</span><span style="color:#66d9ef">)</span>; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>    bastille pkg <span style="color:#e6db74">&#34;</span>$jail<span style="color:#e6db74">&#34;</span> update -y
+</span></span><span style="display:flex;"><span>    bastille pkg <span style="color:#e6db74">&#34;</span>$jail<span style="color:#e6db74">&#34;</span> upgrade -y
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Step 4: freebsd-update (base system)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Only run if kernel patches available</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> freebsd-update cron | grep -q <span style="color:#e6db74">&#34;No updates are available&#34;</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;  No base updates needed&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;  WARNING: freebsd-update requires manual review&#34;</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;  Run: freebsd-update fetch &amp;&amp; freebsd-update install&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Updates complete.&#34;</span>
+</span></span></code></pre></div><h3 id="why-jails-matter">Why Jails Matter</h3>
+<p>Jails are FreeBSD&rsquo;s containerization. Updating host + jails simultaneously is dangerous:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Update host packages only</span>
+</span></span><span style="display:flex;"><span>pkg update -y <span style="color:#f92672">&amp;&amp;</span> pkg upgrade -y
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Update each jail independently</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Reduces blast radius—if jail fails, host is fine</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> jail in app-01 app-02 app-03; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>  bastille pkg <span style="color:#e6db74">&#34;</span>$jail<span style="color:#e6db74">&#34;</span> update -y
+</span></span><span style="display:flex;"><span>  bastille pkg <span style="color:#e6db74">&#34;</span>$jail<span style="color:#e6db74">&#34;</span> upgrade -y
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">done</span>
+</span></span></code></pre></div><h3 id="boot-environments-for-major-upgrades">Boot Environments for Major Upgrades</h3>
+<p>For major releases (13.0 → 13.1), use ZFS boot environments:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Create a new boot environment (atomic rollback)</span>
+</span></span><span style="display:flex;"><span>bectl create upgrade-candidate
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Activate it (next reboot)</span>
+</span></span><span style="display:flex;"><span>bectl activate upgrade-candidate
+</span></span><span style="display:flex;"><span>reboot
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># If it fails, revert atomically</span>
+</span></span><span style="display:flex;"><span>bectl activate previous-environment
+</span></span><span style="display:flex;"><span>reboot
+</span></span></code></pre></div><h2 id="the-cluster-pattern-drain--update--reboot--verify">The Cluster Pattern: Drain → Update → Reboot → Verify</h2>
+<p>For production clusters (Kubernetes, FreeBSD storage nodes, OpenBSD gateways), never update all nodes simultaneously.</p>
+<h3 id="real-cluster-orchestration">Real Cluster Orchestration</h3>
+<ol>
+<li>
+<p><strong>Backup</strong> — Snapshot storage, trigger off-cluster backup</p>
+</li>
+<li>
+<p><strong>Hold critical packages</strong> (Debian only) — <code>apt-mark hold docker-ce containerd.io kubelet</code></p>
+</li>
+<li>
+<p><strong>Update all nodes</strong> (packages, no reboot) — Run apt/pkg/syspatch on every node at once</p>
+</li>
+<li>
+<p><strong>Reboot each node individually:</strong></p>
+<ul>
+<li>Drain workloads (kubectl drain, stop services)</li>
+<li>Trigger reboot</li>
+<li>Wait for SSH to respond (verify boot succeeded)</li>
+<li>Restore workloads (uncordon, restart services)</li>
+<li>Monitor 5 minutes, check logs</li>
+</ul>
+</li>
+<li>
+<p><strong>Unhold packages</strong> (Debian only) — <code>apt-mark unhold &lt;package&gt;</code> once all nodes are healthy</p>
+</li>
+</ol>
+<h3 id="real-sequence-example">Real Sequence Example</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>NODES<span style="color:#f92672">=(</span><span style="color:#e6db74">&#34;compute-01&#34;</span> <span style="color:#e6db74">&#34;compute-02&#34;</span> <span style="color:#e6db74">&#34;compute-03&#34;</span> <span style="color:#e6db74">&#34;storage-01&#34;</span> <span style="color:#e6db74">&#34;storage-02&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>DRAIN_TIMEOUT<span style="color:#f92672">=</span><span style="color:#ae81ff">120</span>
+</span></span><span style="display:flex;"><span>SSH_TIMEOUT<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> node in <span style="color:#e6db74">&#34;</span><span style="color:#e6db74">${</span>NODES[@]<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;=== Updating </span>$node<span style="color:#e6db74"> ===&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># Drain workloads</span>
+</span></span><span style="display:flex;"><span>  kubectl drain <span style="color:#e6db74">&#34;</span>$node<span style="color:#e6db74">&#34;</span> --ignore-daemonsets --delete-emptydir-data <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>    --timeout<span style="color:#f92672">=</span><span style="color:#e6db74">${</span>DRAIN_TIMEOUT<span style="color:#e6db74">}</span>s
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># Trigger reboot</span>
+</span></span><span style="display:flex;"><span>  ssh <span style="color:#e6db74">&#34;</span>$node<span style="color:#e6db74">&#34;</span> <span style="color:#e6db74">&#34;reboot&#34;</span> <span style="color:#f92672">||</span> true
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># Wait for boot</span>
+</span></span><span style="display:flex;"><span>  start_time<span style="color:#f92672">=</span><span style="color:#66d9ef">$(</span>date +%s<span style="color:#66d9ef">)</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">while</span> true; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> ssh <span style="color:#e6db74">&#34;</span>$node<span style="color:#e6db74">&#34;</span> <span style="color:#e6db74">&#34;echo ok&#34;</span> 2&gt;/dev/null; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>      echo <span style="color:#e6db74">&#34;  ✓ SSH available&#34;</span>
+</span></span><span style="display:flex;"><span>      break
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>    elapsed<span style="color:#f92672">=</span><span style="color:#66d9ef">$(($(</span>date +%s<span style="color:#66d9ef">)</span> <span style="color:#f92672">-</span> start_time<span style="color:#66d9ef">))</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> $elapsed -gt $SSH_TIMEOUT <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>      echo <span style="color:#e6db74">&#34;  ✗ Timeout waiting for SSH&#34;</span>
+</span></span><span style="display:flex;"><span>      exit <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>    sleep <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># Restore</span>
+</span></span><span style="display:flex;"><span>  kubectl uncordon <span style="color:#e6db74">&#34;</span>$node<span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># Wait for stability</span>
+</span></span><span style="display:flex;"><span>  sleep <span style="color:#ae81ff">300</span>
+</span></span><span style="display:flex;"><span>  echo <span style="color:#e6db74">&#34;  ✓ </span>$node<span style="color:#e6db74"> complete&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;All nodes updated successfully&#34;</span>
+</span></span></code></pre></div><h2 id="key-lessons">Key Lessons</h2>
+<h3 id="1-hold-critical-packages">1. Hold critical packages</h3>
+<p>On Debian, packages like Docker/Containerd are dangerous to upgrade mid-cluster. Use <code>apt-mark hold</code> to prevent surprise upgrades.</p>
+<h3 id="2-dry-run-first">2. Dry-run first</h3>
+<p>All three OSes support dry-run:</p>
+<ul>
+<li>Debian: <code>apt-get upgrade -s</code> (simulates)</li>
+<li>FreeBSD: <code>pkg upgrade -n</code> (no-op)</li>
+<li>OpenBSD: Run script with <code>--dry-run</code> flag</li>
+</ul>
+<p>Always test on a non-critical system first.</p>
+<h3 id="3-never-reboot-all-nodes-at-once">3. Never reboot all nodes at once</h3>
+<p>The cascade fails. Reboot one node at a time, verify it&rsquo;s back, then move on.</p>
+<h3 id="4-openbsds-syspatch-is-the-simplest-model">4. OpenBSD&rsquo;s syspatch is the simplest model</h3>
+<p>Kernel patches are handled automatically (no manual kernel upgrades). Base system stays simple. Packages are separate. This is the cleanest approach—other OSes should copy it.</p>
+<h3 id="5-freebsd-jails-reduce-blast-radius">5. FreeBSD jails reduce blast radius</h3>
+<p>Update jails independently from the host. If one fails, others aren&rsquo;t affected.</p>
+<h3 id="6-storage-nodes-are-special">6. Storage nodes are special</h3>
+<p>Don&rsquo;t reboot storage nodes while they&rsquo;re handling writes. Drain connections, snapshot, reboot, wait for recovery before next node.</p>
+<h3 id="7-verify-before-declaring-success">7. Verify before declaring success</h3>
+<p>After reboot:</p>
+<ul>
+<li>Check SSH (node is booting)</li>
+<li>Check services (node is usable)</li>
+<li>Wait 5 minutes (let services stabilize)</li>
+<li>Check logs (errors from upgrade)</li>
+<li>Then move to next node</li>
+</ul>
+<h2 id="getting-started">Getting Started</h2>
+<ol>
+<li>
+<p><strong>Audit current security patches:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Debian</span>
+</span></span><span style="display:flex;"><span>apt update <span style="color:#f92672">&amp;&amp;</span> apt list --upgradable
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># FreeBSD</span>
+</span></span><span style="display:flex;"><span>pkg audit -r
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># OpenBSD</span>
+</span></span><span style="display:flex;"><span>syspatch -l
+</span></span></code></pre></div></li>
+<li>
+<p><strong>Test on non-critical system first</strong></p>
+</li>
+<li>
+<p><strong>Document your hold list</strong> (what packages need coordination)</p>
+</li>
+<li>
+<p><strong>Schedule a maintenance window</strong> (nights/weekends when cluster is quiet)</p>
+</li>
+<li>
+<p><strong>Have a rollback plan</strong> (boot environment, snapshots, backup)</p>
+</li>
+</ol>
+<p>Security patches are non-optional. But unplanned reboots are optional. Plan the reboot sequence, execute it methodically, and you keep both security and availability.</p>
+<h2 id="references">References</h2>
+<p>All scripts referenced are available in the <a href="https://github.com/floadsio/syseng">floads syseng toolchain</a>:</p>
+<ul>
+<li><a href="https://github.com/floadsio/syseng/tree/main/linux/debian">Debian updates</a></li>
+<li><a href="https://github.com/floadsio/syseng/tree/main/bsd/freebsd">FreeBSD updates</a></li>
+<li><a href="https://github.com/floadsio/syseng/tree/main/bsd/openbsd">OpenBSD updates</a></li>
+</ul>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/index.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/theme.js"></script>
+
+</body>
+</html>
+

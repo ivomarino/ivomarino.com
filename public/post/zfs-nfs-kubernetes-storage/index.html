@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" ZFS &#43; NFS as Kubernetes Storage: Point-in-Time Recovery Without the Cost &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="https://ivomarino.com/post/zfs-nfs-kubernetes-storage/" />
+    <meta property="og:image" content="https://ivomarino.com/img/zfs-nfs-header.jpg" />
+    <meta property="og:description" content="Kubernetes storage is either ephemeral or expensive. We run a FreeBSD VM with ZFS &#43; NFS in the same VPC as our K8s cluster. Hourly snapshots protect your data. Fast recovery. No vendor lock-in. Here&#39;s how we do it." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-03-26T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="kubernetes" />
+    
+    <meta property="og:article:tag" content="storage" />
+    
+    <meta property="og:article:tag" content="infrastructure" />
+    
+    <meta property="og:article:tag" content="zfs" />
+    
+    <meta property="og:article:tag" content="nfs" />
+    
+    <meta property="og:article:tag" content="freebsd" />
+    
+    <meta property="og:article:tag" content="backup-series" />
+    
+    <meta property="og:article:tag" content="point-in-time-recovery" />
+    
+    <meta property="og:article:tag" content="reliability" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     ZFS &#43; NFS as Kubernetes Storage: Point-in-Time Recovery Without the Cost &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://ivomarino.com/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="https://ivomarino.com/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="https://ivomarino.com/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="https://ivomarino.com/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="https://ivomarino.com/post/zfs-nfs-kubernetes-storage/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="https://ivomarino.com/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(https://ivomarino.com/img/zfs-nfs-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="https://ivomarino.com/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">ZFS &#43; NFS as Kubernetes Storage: Point-in-Time Recovery Without the Cost</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-03-26T00:00:00Z">
+            Mar 26, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/kubernetes/">#kubernetes</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/storage/">#storage</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/infrastructure/">#infrastructure</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/zfs/">#zfs</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/nfs/">#nfs</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/freebsd/">#freebsd</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/backup-series/">#backup-series</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/point-in-time-recovery/">#point-in-time-recovery</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/reliability/">#reliability</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>Kubernetes storage is a problem with no good solution.</p>
+<p>Your options: store data in containers (lost on crash), use cloud storage (vendor lock-in, expensive), or manage your own NFS server (who wants that?).</p>
+<p>We built the fourth option: <strong>A FreeBSD VM running ZFS + NFS in the same VPC as our K8s cluster</strong>.</p>
+<p>It&rsquo;s not flashy. It&rsquo;s not a managed service. But it works.</p>
+<h2 id="the-k8s-storage-problem">The K8s Storage Problem</h2>
+<p>When you run stateful applications in Kubernetes, you hit a wall:</p>
+<p><strong>Option 1: Ephemeral Storage (emptyDir)</strong></p>
+<ul>
+<li>Data lost when pod crashes</li>
+<li>No recovery</li>
+<li>Use case: scratch space, caching</li>
+</ul>
+<p><strong>Option 2: Cloud Storage (EBS, Persistent Disks)</strong></p>
+<ul>
+<li>Works well at first</li>
+<li>Costs $500+ per month at scale</li>
+<li>Vendor lock-in (can&rsquo;t move easily)</li>
+<li>No snapshots for point-in-time recovery</li>
+<li>You&rsquo;re trusting someone else&rsquo;s backups</li>
+</ul>
+<p><strong>Option 3: Self-Hosted Storage (NFS)</strong></p>
+<ul>
+<li>Requires setup, maintenance, monitoring</li>
+<li>No data protection (corruption destroys everything)</li>
+<li>Backups are separate problem</li>
+<li>Recovery is manual and slow</li>
+</ul>
+<p><strong>Real scenario:</strong> We have multiple Kubernetes clusters (stage + prod) that need:</p>
+<ul>
+<li>Persistent storage for databases, documents, caches</li>
+<li>Point-in-time recovery (crash/corruption/accidental delete)</li>
+<li>Offsite backups for compliance</li>
+<li>Monthly budget &lt; $500</li>
+</ul>
+<p>Cloud storage didn&rsquo;t fit. Manual NFS didn&rsquo;t fit. So we built something better.</p>
+<h2 id="why-zfs--nfs">Why ZFS + NFS</h2>
+<p>We chose this combination because each layer does one thing well:</p>
+<p><strong>NFS - Standard Kubernetes protocol</strong></p>
+<p>Works across cluster boundaries. No fancy CSI drivers required. Kubernetes understands it natively. Can mount same storage from multiple clusters simultaneously.</p>
+<p><strong>ZFS - Data protection layer</strong></p>
+<p>Snapshots are point-in-time views (zero-copy, instant creation). Incremental replication for offsite backups. Copy-on-write means snapshots don&rsquo;t consume significant space. Transparent compression and deduplication. Automatic corruption detection.</p>
+<p><strong>FreeBSD - Stable storage platform</strong></p>
+<p>Best ZFS support (it was invented for Solaris, FreeBSD is the standard). Minimal overhead. NFS performance is excellent. Runs on standard cloud VMs without bloat.</p>
+<p>Together: <strong>automated data protection without the cost</strong>.</p>
+<h2 id="real-architecture">Real Architecture</h2>
+<p>Everything runs in the same VPC. Here&rsquo;s the three-layer setup:</p>
+<p><strong>Layer 1: Kubernetes Clusters (Stage + Prod) - Cloud VMs</strong></p>
+<p>Apps request storage via PersistentVolumeClaim. Kubernetes mounts standard NFS storage class. Pods connect to the FreeBSD storage VM via internal VPC network.</p>
+<p><strong>Layer 2: Storage Node (Single FreeBSD VM in same VPC)</strong></p>
+<ul>
+<li>VM specs: 2 vCPU, 4GB RAM (minimal, but sufficient for NFS)</li>
+<li>Export: <code>/export/k8s-data</code> via NFS</li>
+<li>Filesystem: <code>zroot/k8s-data</code> (ZFS with snapshots)</li>
+<li>Snapshots: Hourly (automatically created, pruned after 3 days)</li>
+<li>Protection: Point-in-time recovery ready</li>
+<li>Access: Low-latency internal NFS connection (same VPC)</li>
+</ul>
+<p><strong>Layer 3: Offsite Replication (External Storage)</strong></p>
+<ul>
+<li>Target: rsync.net or similar external offsite storage</li>
+<li>Replication: Nightly incremental sends over WireGuard/SSH</li>
+<li>Retention: Full dataset + 30 days of snapshots</li>
+<li>Recovery: Clone offsite snapshot to new volume, mount as new PV</li>
+</ul>
+<h2 id="how-snapshots-protect-k8s-data">How Snapshots Protect K8s Data</h2>
+<p>A snapshot is a point-in-time view of the filesystem. It&rsquo;s not a copy.</p>
+<p><strong>Key insight:</strong> Creating a snapshot takes microseconds and costs almost nothing in storage space. You can have 365+ snapshots per dataset and use nearly the same space as the original.</p>
+<p><strong>Real scenarios:</strong></p>
+<h3 id="scenario-1-pod-crashes-data-lost">Scenario 1: Pod Crashes, Data Lost</h3>
+<pre tabindex="0"><code>Pod crashes → container restarts → mounts same NFS
+Data is intact (stored on NFS, not in container)
+Application sees its data, continues normally
+</code></pre><p><strong>Recovery time:</strong> Zero (automatic)</p>
+<h3 id="scenario-2-application-writes-bad-data">Scenario 2: Application Writes Bad Data</h3>
+<pre tabindex="0"><code>App bug corrupts database files
+You notice 30 minutes later
+Run: zfs rollback zroot/k8s-data@2026-04-15-09-00
+Database returns to clean state from 30 min ago
+</code></pre><p><strong>Recovery time:</strong> &lt;5 minutes</p>
+<h3 id="scenario-3-accidental-delete">Scenario 3: Accidental Delete</h3>
+<pre tabindex="0"><code>Human error deletes important files
+Too late for rm -r recovery
+Clone offsite snapshot to recovery volume:
+  zfs clone zroot/remote/k8s-data@2026-04-14 \
+    zroot/recovery
+Mount recovery dataset as new PV
+App restores files from 24 hours ago
+</code></pre><p><strong>Recovery time:</strong> 5-10 minutes</p>
+<h3 id="scenario-4-entire-cluster-loss">Scenario 4: Entire Cluster Loss</h3>
+<pre tabindex="0"><code>Cluster hardware fails
+All pods gone, all PVs gone
+Have offsite ZFS snapshot from this morning
+Clone offsite snapshot:
+  zfs clone remote/k8s-data@2026-04-15 \
+    zroot/recovery
+Create new PV pointing to recovery dataset
+Redeploy pods pointing to new PV
+Data restored, minimal loss
+</code></pre><p><strong>Recovery time:</strong> 15-30 minutes (depends on cluster redeploy speed)</p>
+<h2 id="implementation">Implementation</h2>
+<h3 id="storage-class-configuration">Storage Class Configuration</h3>
+<p>Standard Kubernetes NFS storage class:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">storage.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">StorageClass</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">nfs-csi</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">provisioner</span>: <span style="color:#ae81ff">nfs.csi.k8s.io</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">parameters</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">server</span>: <span style="color:#ae81ff">storage-node.internal </span> <span style="color:#75715e"># Your FreeBSD storage nodes</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">share</span>: <span style="color:#ae81ff">/export/k8s-data</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">nfsvers</span>: <span style="color:#ae81ff">3</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">reclaimPolicy</span>: <span style="color:#ae81ff">Retain</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">volumeBindingMode</span>: <span style="color:#ae81ff">Immediate</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">allowVolumeExpansion</span>: <span style="color:#66d9ef">true</span>
+</span></span></code></pre></div><p>Apps request storage normally:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PersistentVolumeClaim</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">postgres-data</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">storageClassName</span>: <span style="color:#ae81ff">nfs-csi</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">accessModes</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ae81ff">ReadWriteOnce</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">storage</span>: <span style="color:#ae81ff">100Gi</span>
+</span></span></code></pre></div><h3 id="automatic-snapshots-with-zfs-autobackup">Automatic Snapshots with zfs-autobackup</h3>
+<p>We use <a href="https://github.com/jimklimov/zfs-autobackup">zfs-autobackup</a>, a Python tool that handles the entire workflow automatically.</p>
+<p><strong>Step 1: Tag datasets</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>zfs set autobackup:k8s-offsite<span style="color:#f92672">=</span>true zroot/k8s-data
+</span></span></code></pre></div><p><strong>Step 2: Run zfs-autobackup daily</strong></p>
+<p>The tool:</p>
+<ul>
+<li>Creates snapshots automatically (tagged with the backup label)</li>
+<li>Sends full dataset on first run</li>
+<li>Sends only incremental changes on subsequent runs</li>
+<li>Destroys incompatible snapshots automatically</li>
+<li>Maintains retention policy (10 recent + daily + weekly + monthly)</li>
+</ul>
+<p>zfs-autobackup supports two modes:</p>
+<p><strong>Push mode</strong> (run on source, push to destination):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>zfs-autobackup <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --clear-mountpoint <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --destroy-incompatible <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --ssh-source storage-node.internal <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  k8s-offsite <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  zroot/remote/k8s-data
+</span></span></code></pre></div><p><strong>Pull mode</strong> (run on destination, pull from source):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>zfs-autobackup <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --clear-mountpoint <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --destroy-incompatible <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  storage-node.internal <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  zroot/remote/k8s-data
+</span></span></code></pre></div><p>Use push mode if the storage node initiates backups. Use pull mode if the offsite target initiates backups (more common in air-gapped environments).</p>
+<p>Run this daily via cron (3:15 AM, for example):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#ae81ff">15</span> <span style="color:#ae81ff">3</span> * * * keep /usr/local/bin/zfs-autobackup-run.sh &gt;&gt; /var/log/zfs-autobackup.log 2&gt;&amp;<span style="color:#ae81ff">1</span>
+</span></span></code></pre></div><p><strong>Real performance:</strong></p>
+<ul>
+<li>Initial full backup (100GB): ~47 hours</li>
+<li>Daily incremental: &lt;10 minutes</li>
+<li>Bandwidth: Efficient (only changed blocks sent)</li>
+<li>Retention: Automatic (10 snapshots kept + time-based rotation)</li>
+</ul>
+<h3 id="what-zfs-autobackup-does">What zfs-autobackup Does</h3>
+<ul>
+<li><strong>Automation:</strong> No manual snapshot commands needed</li>
+<li><strong>Idempotent:</strong> Safe to run multiple times</li>
+<li><strong>Incremental:</strong> Only changed blocks transferred after first sync</li>
+<li><strong>Retention:</strong> Automatic snapshot pruning (keeps N recent + age-based)</li>
+<li><strong>Resume-safe:</strong> Tracks which snapshots were sent, safe to interrupt/resume</li>
+</ul>
+<h2 id="maintenance--high-availability">Maintenance &amp; High Availability</h2>
+<p><strong>Keeping FreeBSD Updated</strong></p>
+<p>FreeBSD is trivial to maintain. Security updates are seamless:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>freebsd-update fetch install
+</span></span></code></pre></div><p>No restarts required for most updates. Reboot only when kernel patches land. A single storage node is simpler to manage than a managed service—no vendor updates to wait for, no API changes to track.</p>
+<p><strong>High Availability (Optional)</strong></p>
+<p>For production HA, replicate to a second storage node in the same VPC:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># On second storage node, pull from primary via zfs-autobackup</span>
+</span></span><span style="display:flex;"><span>zfs-autobackup <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --destroy-incompatible <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  primary-storage.internal <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  zroot/k8s-data-replica
+</span></span></code></pre></div><p>Then use <strong>CARP</strong> (Common Address Redundancy Protocol) on both FreeBSD storage nodes to provide a virtual IP (VIP) for NFS access. K8s storage class points to the VIP instead of a single node. Sub-second failover is automatic—if the primary storage node fails, CARP promotes the replica and NFS requests resume on the secondary without pod restarts.</p>
+<p>This gives you true HA storage with automatic failover, all managed with open-source tools.</p>
+<h2 id="what-we-actually-store">What We Actually Store</h2>
+<p>In production, the storage nodes host a mix of real workloads:</p>
+<p><strong>Databases</strong></p>
+<ul>
+<li>MySQL instances backing web applications and CMS platforms</li>
+<li>200MB–2GB per application (varies by size and retention)</li>
+<li>Point-in-time recovery critical: corruption or accidental deletes are catastrophic</li>
+</ul>
+<p><strong>User-Generated Content</strong></p>
+<ul>
+<li>CMS asset libraries (images, PDFs, documents uploaded by users)</li>
+<li>Can grow to 33GB+ for mature content platforms</li>
+<li>Needs recovery if media library corrupts or users accidentally delete content</li>
+</ul>
+<p><strong>Build &amp; CI/CD Artifacts</strong></p>
+<ul>
+<li>Jenkins: compiled binaries, build logs, caches, workspace data</li>
+<li>1–5GB depending on build frequency and artifact retention</li>
+<li>Must survive pod restarts without data loss</li>
+</ul>
+<p><strong>Application State</strong></p>
+<ul>
+<li>Cache, temporary files, application configuration</li>
+<li>PHP-FPM files, Java build caches, config backups</li>
+<li>Often the difference between pod restart and data corruption</li>
+</ul>
+<p><strong>Package Repositories</strong></p>
+<ul>
+<li>Composer/NPM mirrors cached for faster deployments</li>
+<li>Can be 10GB+ for large teams</li>
+<li>Recoverable but expensive to rebuild</li>
+</ul>
+<p>This isn&rsquo;t ephemeral data. It&rsquo;s the stuff that breaks your application if it disappears. That&rsquo;s why snapshots matter.</p>
+<h2 id="real-numbers">Real Numbers</h2>
+<p><strong>Our setup:</strong></p>
+<ul>
+<li><strong>NFS Node:</strong> 2 vCPU, 4GB RAM FreeBSD VM</li>
+<li><strong>Data:</strong> 1TB active K8s storage (with 998GB ZFS pool in staging, 97.5GB in production)</li>
+<li><strong>Snapshot storage:</strong> 50GB additional (snapshots use copy-on-write)</li>
+<li><strong>Hourly snapshots:</strong> 72 retained (3 days)</li>
+<li><strong>Daily replication:</strong> &lt;10 minutes (incremental only)</li>
+<li><strong>Recovery time:</strong> &lt;5 min (clone snapshot)</li>
+</ul>
+<p><strong>Cost:</strong></p>
+<ul>
+<li>FreeBSD VM (2 vCPU, 4GB RAM, 2TB storage): ~$30-40/month</li>
+<li>Offsite storage: ~$50/month (rsync.net)</li>
+<li>Kubernetes CSI driver: Free (open source)</li>
+<li><strong>Total: ~$80-90/month</strong></li>
+</ul>
+<p><strong>vs. AWS EBS + backup solution:</strong></p>
+<ul>
+<li>EBS: $300+/month for 1TB</li>
+<li>Backup service: $200+/month</li>
+<li><strong>Total: $500+/month</strong></li>
+</ul>
+<p><strong>Savings: ~$410-420/month vs managed solutions</strong></p>
+<h2 id="why-this-matters">Why This Matters</h2>
+<p>You&rsquo;re not betting on a vendor&rsquo;s backup strategy. You control recovery.</p>
+<p>You&rsquo;re not paying per-gigabyte for enterprise backup software. You&rsquo;re using filesystem-level snapshots.</p>
+<p>You&rsquo;re not hoping the cloud provider backs up your data correctly. You&rsquo;re replicating to your own offsite target.</p>
+<h2 id="trade-offs">Trade-offs</h2>
+<p>This isn&rsquo;t perfect for everyone:</p>
+<p><strong>Good for:</strong></p>
+<ul>
+<li>Self-managed Kubernetes (cloud VMs, on-premises, or hybrid)</li>
+<li>Private clusters where you control the infrastructure</li>
+<li>Applications that tolerate occasional brief NFS hiccups</li>
+<li>Teams comfortable managing their own storage layer</li>
+</ul>
+<p><strong>Not ideal for:</strong></p>
+<ul>
+<li>Managed Kubernetes services (GKE, EKS) where you can&rsquo;t provision your own VMs</li>
+<li>Multi-region requirements (NFS latency across regions)</li>
+<li>Applications requiring sub-millisecond latency (use local storage)</li>
+<li>Completely serverless workloads (you need to manage the storage VM)</li>
+</ul>
+<h2 id="the-lesson">The Lesson</h2>
+<p>Don&rsquo;t assume managed services or enterprise backup tools are the only way. A single FreeBSD VM with ZFS + NFS gives you better data protection and costs 3-4x less than managed cloud storage.</p>
+<p>The key: understand what you&rsquo;re protecting (point-in-time data), choose tools that do that well (ZFS snapshots), and automate everything. Run it in the cloud, on-premises, or hybrid—the architecture works anywhere as long as your K8s cluster and storage node can talk on low-latency networks.</p>
+<p>That&rsquo;s how you survive.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/index.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/theme.js"></script>
+
+</body>
+</html>
+

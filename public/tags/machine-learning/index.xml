@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Machine-Learning on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/machine-learning/</link>
+    <description>Recent content in Machine-Learning on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Fri, 27 Mar 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/machine-learning/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>From Data Science to Production: MLOps CI/CD Pipeline with Real-time Accuracy Monitoring</title>
+      <link>https://ivomarino.com/post/mlops-guide/</link>
+      <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/mlops-guide/</guid>
+      <description>Production machine learning requires more than training good models. This guide covers building a complete MLOps system with Kubernetes, Prometheus monitoring, and automated accuracy checks to catch model drift and prevent silent failures in production.</description>
+    </item>
+  </channel>
+</rss>

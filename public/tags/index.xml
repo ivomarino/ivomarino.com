@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/</link>
+    <description>Recent content in Tags on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Thu, 23 Apr 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Automation</title>
+      <link>https://ivomarino.com/tags/automation/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/automation/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Autossh</title>
+      <link>https://ivomarino.com/tags/autossh/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/autossh/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Failover</title>
+      <link>https://ivomarino.com/tags/failover/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/failover/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Freebsd</title>
+      <link>https://ivomarino.com/tags/freebsd/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/freebsd/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Freebsd-Series</title>
+      <link>https://ivomarino.com/tags/freebsd-series/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/freebsd-series/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Infrastructure</title>
+      <link>https://ivomarino.com/tags/infrastructure/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/infrastructure/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Networking</title>
+      <link>https://ivomarino.com/tags/networking/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/networking/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Operations</title>
+      <link>https://ivomarino.com/tags/operations/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/operations/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Reliability</title>
+      <link>https://ivomarino.com/tags/reliability/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/reliability/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Ssh</title>
+      <link>https://ivomarino.com/tags/ssh/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/ssh/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Autoscaling</title>
+      <link>https://ivomarino.com/tags/autoscaling/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/autoscaling/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Autoscaling-Series</title>
+      <link>https://ivomarino.com/tags/autoscaling-series/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/autoscaling-series/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Cost-Efficiency</title>
+      <link>https://ivomarino.com/tags/cost-efficiency/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/cost-efficiency/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Event-Driven</title>
+      <link>https://ivomarino.com/tags/event-driven/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/event-driven/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Keda</title>
+      <link>https://ivomarino.com/tags/keda/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/keda/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Kubernetes</title>
+      <link>https://ivomarino.com/tags/kubernetes/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/kubernetes/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Queue-Based</title>
+      <link>https://ivomarino.com/tags/queue-based/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/queue-based/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Rabbitmq</title>
+      <link>https://ivomarino.com/tags/rabbitmq/</link>
+      <pubDate>Tue, 31 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/rabbitmq/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Debian</title>
+      <link>https://ivomarino.com/tags/debian/</link>
+      <pubDate>Sat, 28 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/debian/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Openbsd</title>
+      <link>https://ivomarino.com/tags/openbsd/</link>
+      <pubDate>Sat, 28 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/openbsd/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Platform-Engineering</title>
+      <link>https://ivomarino.com/tags/platform-engineering/</link>
+      <pubDate>Sat, 28 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/platform-engineering/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Security</title>
+      <link>https://ivomarino.com/tags/security/</link>
+      <pubDate>Sat, 28 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/security/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Devops</title>
+      <link>https://ivomarino.com/tags/devops/</link>
+      <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/devops/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Machine-Learning</title>
+      <link>https://ivomarino.com/tags/machine-learning/</link>
+      <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/machine-learning/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Mlops</title>
+      <link>https://ivomarino.com/tags/mlops/</link>
+      <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/mlops/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Sre</title>
+      <link>https://ivomarino.com/tags/sre/</link>
+      <pubDate>Fri, 27 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/sre/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Backup-Series</title>
+      <link>https://ivomarino.com/tags/backup-series/</link>
+      <pubDate>Thu, 26 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/backup-series/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Nfs</title>
+      <link>https://ivomarino.com/tags/nfs/</link>
+      <pubDate>Thu, 26 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/nfs/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Point-in-Time-Recovery</title>
+      <link>https://ivomarino.com/tags/point-in-time-recovery/</link>
+      <pubDate>Thu, 26 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/point-in-time-recovery/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Storage</title>
+      <link>https://ivomarino.com/tags/storage/</link>
+      <pubDate>Thu, 26 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/storage/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Zfs</title>
+      <link>https://ivomarino.com/tags/zfs/</link>
+      <pubDate>Thu, 26 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/zfs/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Carp</title>
+      <link>https://ivomarino.com/tags/carp/</link>
+      <pubDate>Wed, 25 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/carp/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Firewall</title>
+      <link>https://ivomarino.com/tags/firewall/</link>
+      <pubDate>Wed, 25 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/firewall/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Ha</title>
+      <link>https://ivomarino.com/tags/ha/</link>
+      <pubDate>Wed, 25 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/ha/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Infrastructure-Series</title>
+      <link>https://ivomarino.com/tags/infrastructure-series/</link>
+      <pubDate>Wed, 25 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/infrastructure-series/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Database</title>
+      <link>https://ivomarino.com/tags/database/</link>
+      <pubDate>Mon, 23 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/database/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Mysql</title>
+      <link>https://ivomarino.com/tags/mysql/</link>
+      <pubDate>Mon, 23 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/mysql/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Scaling</title>
+      <link>https://ivomarino.com/tags/scaling/</link>
+      <pubDate>Mon, 23 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/scaling/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Lessons</title>
+      <link>https://ivomarino.com/tags/lessons/</link>
+      <pubDate>Thu, 01 Jan 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/tags/lessons/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

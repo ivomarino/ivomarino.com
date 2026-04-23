@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Xtrabackup on ivomarino.com</title>
+    <link>http://localhost:46569/tags/xtrabackup/</link>
+    <description>Recent content in Xtrabackup on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Wed, 01 Apr 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:46569/tags/xtrabackup/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>XtraBackup &#43; S3: Enterprise Database Backup Strategy</title>
+      <link>http://localhost:46569/post/xtrabackup-s3-enterprise-backups/</link>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/xtrabackup-s3-enterprise-backups/</guid>
+      <description>Database backups at TB scale require incremental backups with intelligent chain management. Learn how XtraBackup + S3 storage with chain-aware retention solves point-in-time recovery without the cost of managed backup solutions. Includes automation patterns used in production.</description>
+    </item>
+  </channel>
+</rss>

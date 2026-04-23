@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Node-Scaling on ivomarino.com</title>
+    <link>http://localhost:46569/tags/node-scaling/</link>
+    <description>Recent content in Node-Scaling on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Fri, 15 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:46569/tags/node-scaling/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Kubernetes Node Autoscaling: When Pod Scaling Isn&#39;t the Answer</title>
+      <link>http://localhost:46569/post/node-autoscaling-cluster-autoscaler/</link>
+      <pubDate>Fri, 15 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/node-autoscaling-cluster-autoscaler/</guid>
+      <description>HPA scales pods, but pods can&amp;rsquo;t run if there&amp;rsquo;s no space on the cluster. Learn why cluster autoscaling is the answer for bursty, unpredictable workloads. Includes pod disruption budgets, graceful shutdown, and real patterns for scaling nodes alongside pod autoscaling.</description>
+    </item>
+  </channel>
+</rss>

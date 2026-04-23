@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" ZFS Offsite Backups on FreeBSD: Incremental Replication at Scale &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="http://192.168.160.249:1313/post/zfs-offsite-backups/" />
+    <meta property="og:image" content="http://192.168.160.249:1313/img/zfs-header.jpg" />
+    <meta property="og:description" content="ZFS snapshots are the foundation for efficient backups. Learn how to replicate them to offsite targets at scale using zfs-autobackup, from simple pairs (lab scale) to hub-and-spoke architectures (production). Includes real numbers and deployment patterns for 1TB&#43; datasets with minute-level incremental backups." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-05-01T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="backup-series" />
+    
+    <meta property="og:article:tag" content="infrastructure" />
+    
+    <meta property="og:article:tag" content="backups" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="zfs" />
+    
+    <meta property="og:article:tag" content="freebsd" />
+    
+    <meta property="og:article:tag" content="replication" />
+    
+    <meta property="og:article:tag" content="incremental-backup" />
+    
+    <meta property="og:article:tag" content="point-in-time-recovery" />
+    
+    <meta property="og:article:tag" content="automation" />
+    
+    
+
+  <title>
+     ZFS Offsite Backups on FreeBSD: Incremental Replication at Scale &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="http://192.168.160.249:1313/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="http://192.168.160.249:1313/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="http://192.168.160.249:1313/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="http://192.168.160.249:1313/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="http://192.168.160.249:1313/post/zfs-offsite-backups/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="http://192.168.160.249:1313/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(http://192.168.160.249:1313/img/zfs-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="http://192.168.160.249:1313/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">ZFS Offsite Backups on FreeBSD: Incremental Replication at Scale</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-05-01T00:00:00Z">
+            May 1, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backup-series/">#backup-series</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/infrastructure/">#infrastructure</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backups/">#backups</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/zfs/">#zfs</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/freebsd/">#freebsd</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/replication/">#replication</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/incremental-backup/">#incremental-backup</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/point-in-time-recovery/">#point-in-time-recovery</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/automation/">#automation</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>ZFS snapshots are one of the best tools for backups. They&rsquo;re efficient, point-in-time capable, and idempotent. But most posts only show simple examples: backup one server to one target.</p>
+<p>This is about real-world patterns at scale.</p>
+<h2 id="why-zfs-for-backups">Why ZFS for Backups</h2>
+<p>ZFS snapshots have two critical advantages:</p>
+<p><strong>1. Incremental by design</strong></p>
+<p>A snapshot is just a point-in-time view of the filesystem. To replicate it, ZFS only sends the changed blocks since the last snapshot—not the entire dataset.</p>
+<p>First sync of a 100GB dataset: might take hours on a slow link.</p>
+<p>Subsequent daily syncs: minutes (only changed blocks).</p>
+<p><strong>2. Idempotent replication</strong></p>
+<p>Send the same snapshot 100 times, the target gets the exact same result. No corruption, no half-states. Perfect for automation.</p>
+<h2 id="real-production-patterns">Real Production Patterns</h2>
+<p>We deploy ZFS snapshots in two patterns:</p>
+<h3 id="pattern-1-simple-pair-lab-to-offsite">Pattern 1: Simple Pair (Lab to Offsite)</h3>
+<p><strong>Topology:</strong></p>
+<pre tabindex="0"><code>Source: Home lab (101GB)
+  ↓ (WireGuard tunnel, 600 KB/s)
+Target: Offsite hypervisor
+</code></pre><p><strong>Schedule:</strong></p>
+<ul>
+<li>Snapshot every hour (background)</li>
+<li>Incremental replication nightly (3:15 AM)</li>
+<li>Retention: Keep last 10 snapshots locally, auto-prune older ones offsite</li>
+<li>Recovery time: &lt;5 minutes (clone offsite snapshot)</li>
+</ul>
+<p><strong>Use case:</strong> Single hypervisor, small infrastructure, testing.</p>
+<h3 id="pattern-2-hub-and-spoke-production">Pattern 2: Hub-and-Spoke (Production)</h3>
+<p><strong>Topology:</strong></p>
+<pre tabindex="0"><code>9 source hypervisors ─┐
+                      ├─→ Central offsite target
+                     ...
+</code></pre><p><strong>Schedule:</strong></p>
+<ul>
+<li>Daily snapshots on each source (every 6-12 hours)</li>
+<li>Incremental sync to offsite twice daily (7 AM and 7 PM UTC)</li>
+<li>All sources use same SSH key, push to same offsite target</li>
+<li>Retention: Source keeps 12 hourly + 2 daily; target keeps 7 recent + 1/day/week/month/year</li>
+<li>Storage: 2TB source data → 5TB offsite (with multi-snapshot retention)</li>
+</ul>
+<p><strong>Use case:</strong> Distributed infrastructure, production scale, multiple hypervisors.</p>
+<h2 id="how-it-works">How It Works</h2>
+<p>We use <a href="https://github.com/jimklimov/zfs-autobackup">zfs-autobackup</a>, a Python tool that manages the entire workflow:</p>
+<h3 id="1-tag-your-datasets">1. Tag Your Datasets</h3>
+<p>Mark which datasets to back up:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>zfs set autobackup:offsite<span style="color:#f92672">=</span>true zroot/home
+</span></span><span style="display:flex;"><span>zfs set autobackup:offsite<span style="color:#f92672">=</span>true zroot/bastille
+</span></span><span style="display:flex;"><span>zfs set autobackup:offsite<span style="color:#f92672">=</span>true zroot/vm
+</span></span></code></pre></div><h3 id="2-create-offsite-receiving-datasets">2. Create Offsite Receiving Datasets</h3>
+<p>On the target system, prepare to receive snapshots:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>zfs create -o canmount<span style="color:#f92672">=</span>off zroot/remote
+</span></span><span style="display:flex;"><span>zfs create zroot/remote/virt-01
+</span></span><span style="display:flex;"><span>zfs create zroot/remote/virt-02
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># ... (one per source)</span>
+</span></span></code></pre></div><h3 id="3-run-automated-replication">3. Run Automated Replication</h3>
+<p><strong>Simple pair (local SSH):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>zfs-autobackup -v <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --clear-mountpoint <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --keep-source<span style="color:#f92672">=</span><span style="color:#ae81ff">10</span> <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --keep-target<span style="color:#f92672">=</span>10,1d1w,1w1m,1m1y <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --ssh-source virt.home offsite zroot/remote
+</span></span></code></pre></div><p><strong>Hub-and-spoke (multiple sources):</strong></p>
+<p>For each source, run a script like this twice daily via cron:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/sh
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>/usr/local/bin/zfs-autobackup -v <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --clear-mountpoint <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --clear-refreservation <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --ignore-transfer-errors <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --keep-source<span style="color:#f92672">=</span>12h2d <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --keep-target<span style="color:#f92672">=</span>7,1d1w,1w1m,6m1y <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --destroy-missing 7d <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --ssh-source keep@10.61.0.10 offsite-virt-05 <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  tank/remote/virt-01
+</span></span></code></pre></div><p>Schedule via cron:</p>
+<pre tabindex="0"><code>0 7,19 * * * /usr/local/bin/zfs-autobackup-virt-01.sh
+0 7,19 * * * /usr/local/bin/zfs-autobackup-virt-02.sh
+# ... (one per source)
+</code></pre><h2 id="real-numbers">Real Numbers</h2>
+<h3 id="lab-deployment-pattern-1">Lab Deployment (Pattern 1)</h3>
+<ul>
+<li>Data: 101GB (user home, jails, VMs)</li>
+<li>Initial sync: <strong>47 hours</strong> (600 KB/s on 10 Mbit WAN)</li>
+<li>Daily incremental: <strong>10-30 minutes</strong> (typical 5% change = 5GB)</li>
+<li>Offsite retention: ~500GB (multiple snapshots)</li>
+<li>Cron window: Usually completes in 20 minutes</li>
+</ul>
+<h3 id="hub-and-spoke-deployment-pattern-2">Hub-and-Spoke Deployment (Pattern 2)</h3>
+<ul>
+<li>Sources: 9 hypervisors</li>
+<li>Total data: ~2TB</li>
+<li>Change rate per source: 50-200MB daily</li>
+<li>Offsite storage: ~5TB (data + retention)</li>
+<li>Backup cycle: 7 AM + 7 PM UTC, takes 2-3 hours each</li>
+<li>Network: 10 Mbit private link (handles concurrent pulls)</li>
+</ul>
+<h3 id="bandwidth-reality">Bandwidth Reality</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Change/Day</th>
+<th>Sync Time</th>
+<th>WAN Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100GB at 5% change</td>
+<td>5GB</td>
+<td>2-3 hours</td>
+<td>0.5-0.7 Mbit/s</td>
+</tr>
+<tr>
+<td>1TB at 2% change</td>
+<td>20GB</td>
+<td>8-10 hours</td>
+<td>0.2-0.3 Mbit/s</td>
+</tr>
+<tr>
+<td>2TB at 5% change</td>
+<td>100GB</td>
+<td>40-50 hours</td>
+<td>0.5-0.7 Mbit/s</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key insight:</strong> It&rsquo;s not about total data, it&rsquo;s about change rate. ZFS incremental scaling is beautiful—100GB and 1TB backup times are nearly identical if they have the same change rate.</p>
+<h2 id="retention-policy">Retention Policy</h2>
+<p>Retention is where most backup solutions fail. Delete the wrong snapshot and you orphan all dependents.</p>
+<p>ZFS-autobackup handles this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>--keep-source<span style="color:#f92672">=</span>12h2d          <span style="color:#75715e"># Keep 12 hourly + 2 daily snapshots locally</span>
+</span></span><span style="display:flex;"><span>--keep-target<span style="color:#f92672">=</span>7,1d1w,1w1m,6m1y  <span style="color:#75715e"># 7 recent, 1/day/week/month/year</span>
+</span></span><span style="display:flex;"><span>--destroy-missing 7d         <span style="color:#75715e"># Delete offsite if missing 7+ days</span>
+</span></span></code></pre></div><p><strong>What this means:</strong></p>
+<ul>
+<li>Source: Keep enough for local recovery (don&rsquo;t fill disk)</li>
+<li>Target: Keep for compliance and point-in-time (7 recent + 1/day/week/month/year)</li>
+<li>Automatic: Both are auto-pruned, no manual snapshot deletion</li>
+<li>Safe: Nothing gets deleted if it still has dependents</li>
+</ul>
+<h2 id="operational-procedures">Operational Procedures</h2>
+<p><strong>Check backup status:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;tail -50 /var/log/zfs-autobackup.log&#34;</span>
+</span></span><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;zfs list -t snapshot -r zroot/remote/virt-01 | tail -20&#34;</span>
+</span></span><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;grep -i error /var/log/zfs-autobackup.log | tail -10&#34;</span>
+</span></span></code></pre></div><p><strong>Manual trigger (don&rsquo;t wait for cron):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;sudo -u keep /usr/local/bin/zfs-autobackup-run.sh&#34;</span>
+</span></span></code></pre></div><p><strong>Dry-run (see what would happen):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;sudo -u keep /usr/local/bin/zfs-autobackup --dry-run \
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  -v --clear-mountpoint --ssh-source virt.home offsite zroot/remote/virt-home&#34;</span>
+</span></span></code></pre></div><p><strong>Recovery procedure:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Find the snapshot you need</span>
+</span></span><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;zfs list -t snapshot -r zroot/remote/virt-01&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Clone snapshot to a new dataset</span>
+</span></span><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;sudo zfs clone zroot/remote/virt-01@2026-05-01_12-00 \
+</span></span></span><span style="display:flex;"><span><span style="color:#e6db74">  zroot/recovery/virt-01&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Mount and verify</span>
+</span></span><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;mount -t zfs zroot/recovery/virt-01 /mnt/recovery&#34;</span>
+</span></span><span style="display:flex;"><span>ssh syseng@offsite <span style="color:#e6db74">&#34;ls -lah /mnt/recovery/&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Copy back to source or use as recovery</span>
+</span></span></code></pre></div><h2 id="what-we-learned">What We Learned</h2>
+<p><strong>1. SSH authentication is the best choice</strong></p>
+<p>No special networking needed. Works across zones, datacenters, VPNs. SSH keys in chezmoi (encrypted), managed through normal DevOps tooling.</p>
+<p><strong>2. Retention policies prevent runaway snapshot growth</strong></p>
+<p>Without policies: 365+ snapshots per year (disk fills).
+With policies: 30-50 snapshots per year (manageable).
+Automatic pruning is safer than manual.</p>
+<p><strong>3. Cron scheduling matters for multi-source setups</strong></p>
+<p>Stagger sources if possible (avoid thundering herd).
+Use monitoring hooks (healthchecks.io, runitor).
+Check logs daily first week, then weekly.</p>
+<p><strong>4. Handle-releasing is critical</strong></p>
+<p>If a transfer fails, ZFS holds prevent cleanup.
+Use <code>zfs release</code> even on error paths.
+Use <code>--destroy-missing</code> to prune orphaned snapshots.</p>
+<p><strong>5. WireGuard beats dedicated VPN for backups</strong></p>
+<p>Lower latency, lower CPU overhead, simpler configuration.
+SSH over WireGuard is rock-solid even with packet loss.</p>
+<h2 id="getting-started">Getting Started</h2>
+<p>Install zfs-autobackup from your OS package manager (FreeBSD, Debian, Alpine):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># FreeBSD</span>
+</span></span><span style="display:flex;"><span>pkg install zfs-autobackup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Debian/Ubuntu</span>
+</span></span><span style="display:flex;"><span>apt install zfs-autobackup
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Then set up SSH keys and cron</span>
+</span></span></code></pre></div><p>For detailed deployment with Ansible, see <a href="https://github.com/floadsio/flamelet-home">flamelet infrastructure repository</a>.</p>
+<p>The key insight: ZFS snapshots are incremental by design. Replication is fast, reliable, and scales beautifully to TB-scale datasets. Automation handles retention so you don&rsquo;t have to.</p>
+<hr>
+<p><strong>Next in the backup series:</strong> We&rsquo;ll show the three-layer backup strategy combining ZFS snapshots, Restic backups, and S3 archives for complete infrastructure protection.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/index.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/theme.js"></script>
+
+</body>
+</html>
+

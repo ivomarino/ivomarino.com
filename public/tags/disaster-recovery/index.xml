@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Disaster-Recovery on ivomarino.com</title>
+    <link>http://localhost:46569/tags/disaster-recovery/</link>
+    <description>Recent content in Disaster-Recovery on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Tue, 05 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:46569/tags/disaster-recovery/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Production Backup Strategy: Three Layers of Defense</title>
+      <link>http://localhost:46569/post/production-backup-strategy/</link>
+      <pubDate>Tue, 05 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/production-backup-strategy/</guid>
+      <description>Single backup tool doesn&amp;rsquo;t work at production scale. Learn the three-layer backup architecture combining ZFS snapshots (local fast recovery), Restic backups (offsite immutable), and S3 archives (compliance). Achieves defense-in-depth with 1TB data, point-in-time recovery, and only $50/month cost.</description>
+    </item>
+  </channel>
+</rss>

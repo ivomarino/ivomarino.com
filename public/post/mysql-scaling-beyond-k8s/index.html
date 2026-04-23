@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" Scaling MySQL Beyond Kubernetes: When Backups Become The Blocker &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="https://ivomarino.com/post/mysql-scaling-beyond-k8s/" />
+    <meta property="og:image" content="https://ivomarino.com/img/mysql-header.jpg" />
+    <meta property="og:description" content="We ran MySQL in Kubernetes for years until the data scaled from GB to TB. Kubernetes wasn&#39;t the problem—backups were. Kasten (the Kubernetes backup tool) was never designed for databases at our scale. Learn why we moved MySQL off Kubernetes and the backup solution we built to solve this infrastructure challenge." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-03-23T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="backup-series" />
+    
+    <meta property="og:article:tag" content="database" />
+    
+    <meta property="og:article:tag" content="kubernetes" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="mysql" />
+    
+    <meta property="og:article:tag" content="scaling" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     Scaling MySQL Beyond Kubernetes: When Backups Become The Blocker &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://ivomarino.com/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="https://ivomarino.com/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="https://ivomarino.com/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="https://ivomarino.com/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="https://ivomarino.com/post/mysql-scaling-beyond-k8s/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="https://ivomarino.com/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(https://ivomarino.com/img/mysql-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="https://ivomarino.com/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">Scaling MySQL Beyond Kubernetes: When Backups Become The Blocker</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-03-23T00:00:00Z">
+            Mar 23, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/backup-series/">#backup-series</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/database/">#database</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/kubernetes/">#kubernetes</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/mysql/">#mysql</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/scaling/">#scaling</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>We ran MySQL in Kubernetes for years. It worked great.</p>
+<p>Then the data grew.</p>
+<p>From GB to hundreds of GB to TB. And suddenly, Kubernetes wasn&rsquo;t the problem—backups were.</p>
+<p>This is the story of why we moved MySQL off Kubernetes, but not because Kubernetes failed. It failed because the backup tool was never designed for databases at our scale.</p>
+<h2 id="the-years-it-worked">The Years It Worked</h2>
+<p>Kubernetes was fine for MySQL when:</p>
+<ul>
+<li>Data was small (single-digit GB)</li>
+<li>Backups were quick</li>
+<li>Recovery was rare</li>
+<li>Kasten (the Kubernetes backup tool) could handle snapshots</li>
+</ul>
+<p>We had everything infrastructure engineers want:</p>
+<ul>
+<li>Infrastructure as code (YAML files)</li>
+<li>Automatic failover (StatefulSets)</li>
+<li>Self-healing (pod restarts)</li>
+<li>Version-controlled infrastructure</li>
+</ul>
+<p>It wasn&rsquo;t elegant, but it worked. We weren&rsquo;t thinking about moving it.</p>
+<h2 id="the-scaling-problem">The Scaling Problem</h2>
+<p>Data grew. Fintech platforms have that problem—transactional data multiplies.</p>
+<p>We moved from:</p>
+<ul>
+<li>Single GB backups (minutes to complete, hours to verify recovery)</li>
+<li>To 100GB backups (hours to complete, restore became risky)</li>
+<li>To TB backups (overnight backups, recovery windows measured in days)</li>
+</ul>
+<p>Suddenly, backup operations became the critical path for the entire infrastructure.</p>
+<h2 id="why-kasten-failed-at-scale">Why Kasten Failed at Scale</h2>
+<p>Kasten is designed for Kubernetes workloads. It&rsquo;s great for:</p>
+<ul>
+<li>Restoring a lost pod</li>
+<li>Backing up application state</li>
+<li>Snapshot-based recovery</li>
+</ul>
+<p>It&rsquo;s terrible for:</p>
+<ul>
+<li>Large, consistent database exports</li>
+<li>Incremental backups</li>
+<li>Point-in-time recovery</li>
+<li>Hot backup management</li>
+</ul>
+<p>The root cause: <strong>Kasten doesn&rsquo;t understand databases.</strong></p>
+<p>It treats MySQL the same as it treats stateless services—snapshots and restore. But databases need:</p>
+<ul>
+<li>Consistent, logical backups (not raw snapshots)</li>
+<li>Incremental backups (TB of data can&rsquo;t be full-backed daily)</li>
+<li>Recovery verification (you need to test that backups actually work)</li>
+<li>Point-in-time recovery (financial systems need this)</li>
+</ul>
+<p>When backups hit TB scale, Kasten couldn&rsquo;t keep up. Recovery testing took days. Backup failures happened often. The team spent cycles babysitting backups instead of shipping features.</p>
+<h2 id="the-decision-move-to-vms">The Decision: Move to VMs</h2>
+<p>Not because Kubernetes was broken. Because the backup requirement broke Kubernetes.</p>
+<p>The solution: <strong>Move MySQL to Debian VMs and implement proper database backups.</strong></p>
+<p>This sounds like a step backward. It&rsquo;s not. It&rsquo;s recognizing that databases need specialized infrastructure.</p>
+<h2 id="the-implementation-xtrabackup--s3">The Implementation: XtraBackup + S3</h2>
+<p>We didn&rsquo;t just move the database. We built a backup solution designed for MySQL at scale.</p>
+<p><strong>Three components:</strong></p>
+<ol>
+<li><strong>Backup script</strong> - Full and incremental backups with S3 sync</li>
+<li><strong>Restore script</strong> - Automatic decompression, decryption, preparation</li>
+<li><strong>Analysis tool</strong> - Backup chain verification and integrity checking</li>
+</ol>
+<p><strong>Key features:</strong></p>
+<ul>
+<li>Automatic tool detection (MySQL vs Percona vs MariaDB vs Galera)</li>
+<li>Incremental backup chains that track relationships</li>
+<li>Compression and encryption built-in</li>
+<li>Smart retention (never deletes a chain with recent incrementals)</li>
+<li>Point-in-time recovery (restore up to any incremental in the chain)</li>
+<li>Local or S3 storage modes</li>
+<li>Dry-run support for safety</li>
+</ul>
+<p>The full implementation is open source:
+<a href="https://github.com/floadsio/syseng/tree/main/mysql/xtrabackup-s3">github.com/floadsio/syseng/tree/main/mysql/xtrabackup-s3</a></p>
+<p><strong>Workflow:</strong></p>
+<pre tabindex="0"><code>Sunday:   Full backup + cleanup of orphaned chains
+Mon-Sat:  Incremental backups every 6 hours
+Weekly:   Analyze all backup chains
+Monthly:  Verify integrity of recent backups
+</code></pre><p><strong>Result:</strong></p>
+<p>TB-scale MySQL with reliable backups. Recovery testing works. The team sleeps.</p>
+<h2 id="what-changed-operationally">What Changed Operationally</h2>
+<p><strong>Before (Kubernetes):</strong></p>
+<ul>
+<li>Backup operations were uncertain</li>
+<li>Recovery testing took days</li>
+<li>Backup failures were common</li>
+<li>Team spent time debugging Kasten</li>
+<li>Scaling meant hoping backups still worked</li>
+</ul>
+<p><strong>After (VMs + XtraBackup):</strong></p>
+<ul>
+<li>Backups complete reliably every 6 hours</li>
+<li>Recovery testing takes hours, not days</li>
+<li>Backup failures are rare (and when they happen, they&rsquo;re database problems, not infrastructure)</li>
+<li>Team maintains simple shell scripts, not Kubernetes operators</li>
+<li>Scaling means adding more incremental backups, not rearchitecting</li>
+</ul>
+<h2 id="the-real-lesson">The Real Lesson</h2>
+<p><strong>Kubernetes is great for compute. It&rsquo;s not a data platform.</strong></p>
+<p>When people say &ldquo;run everything on Kubernetes,&rdquo; they usually mean &ldquo;run stateless services on Kubernetes.&rdquo;</p>
+<p>Databases are different. They&rsquo;re stateful, they&rsquo;re I/O sensitive, and they have specialized operational requirements.</p>
+<p>For databases:</p>
+<ul>
+<li>Use managed services (RDS, Cloud SQL) if available</li>
+<li>Use dedicated infrastructure (VMs with proper backup tooling) if not</li>
+<li>Don&rsquo;t use container orchestration platforms designed for stateless services</li>
+</ul>
+<p>This isn&rsquo;t a failure of Kubernetes. It&rsquo;s recognizing the right tool for the job.</p>
+<h2 id="what-we-learned">What We Learned</h2>
+<ol>
+<li>
+<p><strong>Backup strategy determines infrastructure choices</strong></p>
+<ul>
+<li>For large databases, backup design is the primary constraint</li>
+<li>Kubernetes has no good answer for this</li>
+<li>Database-native tools (XtraBackup) exist for a reason</li>
+</ul>
+</li>
+<li>
+<p><strong>Scaling exposes wrong choices</strong></p>
+<ul>
+<li>At GB scale, Kubernetes for MySQL is fine</li>
+<li>At TB scale, it&rsquo;s untenable</li>
+<li>If you find yourself fighting your infrastructure, you have the wrong tool</li>
+</ul>
+</li>
+<li>
+<p><strong>Operational simplicity matters</strong></p>
+<ul>
+<li>Simple scripts &gt; complex operators</li>
+<li>Database-native tools &gt; infrastructure-generic tools</li>
+<li>Team can maintain shell scripts; Kubernetes expertise isn&rsquo;t required</li>
+</ul>
+</li>
+<li>
+<p><strong>Cloud-native ≠ Kubernetes</strong></p>
+<ul>
+<li>Cloud-native means using cloud resources effectively</li>
+<li>Sometimes that&rsquo;s Kubernetes, sometimes it&rsquo;s managed services, sometimes it&rsquo;s VMs</li>
+<li>Choose the tool that solves your problem with the least operational overhead</li>
+</ul>
+</li>
+</ol>
+<h2 id="the-trade-off">The Trade-off</h2>
+<p><strong>What we gave up:</strong></p>
+<ul>
+<li>Cluster elasticity (VMs are fixed-size)</li>
+<li>The feeling of being &ldquo;modern&rdquo; (VMs feel old-fashioned)</li>
+</ul>
+<p><strong>What we got:</strong></p>
+<ul>
+<li>Infrastructure as code via Ansible (VMs fully automated and reproducible)</li>
+<li>Reliable backups that actually work</li>
+<li>Point-in-time recovery capability (validated with full recovery testing for compliance)</li>
+<li>Team doesn&rsquo;t spend cycles on infrastructure</li>
+<li>Operational simplicity</li>
+<li>Significantly fewer production incidents related to data loss</li>
+</ul>
+<p>The trade-off was worth it.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/index.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/theme.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="https://ivomarino.com/post/keda-queue-autoscaling/" />
+    <meta property="og:image" content="https://ivomarino.com/img/keda-header.jpg" />
+    <meta property="og:description" content="Kubernetes HPA with CPU metrics fails for queue-based workloads. Learn why queue depth is the right signal, how KEDA makes event-driven autoscaling trivial, and the configuration that reduced processing latency from 45 minutes to 5-15 minutes with zero manual scaling." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-03-31T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="autoscaling-series" />
+    
+    <meta property="og:article:tag" content="kubernetes" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="keda" />
+    
+    <meta property="og:article:tag" content="rabbitmq" />
+    
+    <meta property="og:article:tag" content="event-driven" />
+    
+    <meta property="og:article:tag" content="queue-based" />
+    
+    <meta property="og:article:tag" content="autoscaling" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://ivomarino.com/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="https://ivomarino.com/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="https://ivomarino.com/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="https://ivomarino.com/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="https://ivomarino.com/post/keda-queue-autoscaling/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="https://ivomarino.com/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(https://ivomarino.com/img/keda-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="https://ivomarino.com/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">Kubernetes Pod Autoscaling with KEDA: Queue Depth Beats CPU Every Time</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-03-31T00:00:00Z">
+            Mar 31, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/autoscaling-series/">#autoscaling-series</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/kubernetes/">#kubernetes</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/keda/">#keda</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/rabbitmq/">#rabbitmq</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/event-driven/">#event-driven</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/queue-based/">#queue-based</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/autoscaling/">#autoscaling</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>We had a batch processing system running on Kubernetes that consumed messages from a queue. The platform handled vendor data transformations and product list updates—unpredictable, bursty traffic that spiked without warning.</p>
+<p>We tried Kubernetes HPA with CPU metrics.</p>
+<p>It failed immediately.</p>
+<h2 id="the-problem-with-cpu-based-autoscaling-for-queues">The Problem with CPU-Based Autoscaling for Queues</h2>
+<p>Here&rsquo;s what we did:</p>
+<p><strong>Test 1: Set HPA target to 70% CPU</strong></p>
+<ul>
+<li>Workers sit idle while the queue builds up (low CPU usage)</li>
+<li>Queue hits 50,000 messages waiting to be processed</li>
+<li>CPU finally spikes to 90%</li>
+<li>HPA triggers and starts new pods</li>
+<li>But 3+ minutes have passed</li>
+<li>Workers were never actually busy—they were just waiting for work</li>
+</ul>
+<p>The metric was wrong. CPU doesn&rsquo;t measure queue congestion.</p>
+<p><strong>Test 2: More aggressive—target CPU at 50%</strong></p>
+<ul>
+<li>HPA triggers faster, but CPU is still a lagging indicator</li>
+<li>Traffic spikes arrive faster than CPU metrics can detect them</li>
+<li>By the time HPA scales up, traffic has already dropped</li>
+<li>Pods start spinning up, then traffic stops</li>
+<li>HPA immediately scales down (thrashing)</li>
+<li>Pod startup/shutdown cycle becomes more expensive than actual work</li>
+<li>Queue keeps growing</li>
+</ul>
+<p><strong>Test 3: Switched to memory-based HPA</strong></p>
+<ul>
+<li>Memory grows gradually as workers process</li>
+<li>HPA almost never triggered</li>
+<li>We just hit out-of-memory limits (OOM kills)</li>
+<li>Gave up and managed replicas manually</li>
+<li>This is unacceptable for a production system</li>
+</ul>
+<h2 id="the-insight">The Insight</h2>
+<p>For queue workloads, <strong>the queue depth IS the signal of overload.</strong></p>
+<p>If you have 50,000 messages sitting in RabbitMQ, you are overloaded <em>right now</em>. It doesn&rsquo;t matter if your CPUs show 20% usage. Your workers could be processing 10x faster if you gave them capacity.</p>
+<p>Queue depth = real demand. CPU = lagging indicator. Memory = wrong signal entirely.</p>
+<h2 id="the-solution-keda">The Solution: KEDA</h2>
+<p>KEDA (Kubernetes Event-driven Autoscaling) extends Kubernetes autoscaling beyond CPU and memory. It works with 50+ event sources:</p>
+<ul>
+<li>Message queues: RabbitMQ, AWS SQS, Apache Kafka</li>
+<li>Databases: PostgreSQL, MySQL, Redis</li>
+<li>Cloud services: AWS CloudWatch, Azure Service Bus</li>
+<li>Custom: HTTP endpoints, webhooks, cron schedules</li>
+<li>Metrics: Prometheus, Datadog, Grafana Loki</li>
+</ul>
+<p>Installation takes 5 minutes. Configuration is straightforward Kubernetes YAML.</p>
+<h3 id="configuration-pattern">Configuration Pattern</h3>
+<p>Deploy KEDA to your cluster:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>helm repo add kedacore https://kedacore.github.io/charts
+</span></span><span style="display:flex;"><span>helm install keda kedacore/keda --namespace keda --create-namespace
+</span></span></code></pre></div><p>Then define a <code>ScaledObject</code> that watches your queue:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">keda.sh/v1alpha1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">ScaledObject</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">data-processor-worker-scaler</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">prod</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">scaleTargetRef</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Deployment</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">name</span>: <span style="color:#ae81ff">data-processor-worker</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">minReplicaCount</span>: <span style="color:#ae81ff">16</span>        <span style="color:#75715e"># Baseline capacity</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">maxReplicaCount</span>: <span style="color:#ae81ff">40</span>        <span style="color:#75715e"># Safety ceiling</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">cooldownPeriod</span>: <span style="color:#ae81ff">60</span>         <span style="color:#75715e"># Wait 60s between scale events</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">pollingInterval</span>: <span style="color:#ae81ff">30</span>        <span style="color:#75715e"># Check metrics every 30s</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">triggers</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">type</span>: <span style="color:#ae81ff">prometheus</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">serverAddress</span>: <span style="color:#e6db74">&#34;https://&lt;prometheus-endpoint&gt;/api/prom&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">metricName</span>: <span style="color:#ae81ff">rabbitmq_queue_messages_ready</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">threshold</span>: <span style="color:#e6db74">&#34;5000&#34;</span>      <span style="color:#75715e"># Scale when queue &gt; 5k messages</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">query</span>: <span style="color:#e6db74">&#34;avg_over_time(rabbitmq_queue_messages_ready[5m])&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">authenticationRef</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">name</span>: <span style="color:#ae81ff">keda-prometheus-creds</span>
+</span></span></code></pre></div><p><strong>What each setting does:</strong></p>
+<p><strong>minReplicaCount: 16</strong> — This is different from typical autoscaling (which uses min=1 or min=3). For always-on queue workloads, don&rsquo;t scale to zero. Keep baseline capacity ready. It&rsquo;s cheaper than constantly spinning up new pods.</p>
+<p><strong>maxReplicaCount: 40</strong> — Hard cap to prevent runaway scaling. Beyond this, let your cluster autoscaler add more nodes.</p>
+<p><strong>pollingInterval: 30</strong> — KEDA checks your queue depth every 30 seconds. Fast enough to catch bursts, slow enough to avoid thrashing.</p>
+<p><strong>cooldownPeriod: 60</strong> — After scaling, wait 60 seconds before the next scale decision. Prevents constant scaling up/down during traffic fluctuations.</p>
+<p><strong>threshold: 5000</strong> — Each worker processes 500-1000 messages per minute. With 16 baseline replicas (8k-16k msg/min throughput), a threshold of 5,000 messages keeps the queue from ever getting huge. It&rsquo;s a signal to add capacity proactively.</p>
+<p><strong>5-minute metric window</strong> — The Prometheus query averages queue depth over 5 minutes. Avoids reacting to 1-second spikes that might be temporary.</p>
+<h2 id="the-results">The Results</h2>
+<p><strong>Before (manual + CPU HPA):</strong></p>
+<ul>
+<li>Queue would spike to 100,000+ messages during vendor pushes</li>
+<li>Processing delays, customer impact</li>
+<li>Manual scaling overhead</li>
+<li>Average processing latency: <strong>45-90 minutes</strong></li>
+</ul>
+<p><strong>After (KEDA):</strong></p>
+<ul>
+<li>Queue rarely exceeds 10,000 messages</li>
+<li>Automatic, reactive scaling</li>
+<li>Zero manual intervention</li>
+<li>Average processing latency: <strong>5-15 minutes</strong></li>
+<li>Cost: Same or lower (fewer idle pods, better utilization)</li>
+</ul>
+<p>A 6x improvement in latency with less operational overhead.</p>
+<h2 id="when-to-use-keda">When to Use KEDA</h2>
+<p><strong>Use KEDA when:</strong></p>
+<ul>
+<li>You have queue-based workloads (RabbitMQ, SQS, Kafka, etc.)</li>
+<li>Traffic is unpredictable or bursty</li>
+<li>You need responsive scaling without manual intervention</li>
+<li>Your metric is &ldquo;queue depth&rdquo; or event rate, not CPU/memory</li>
+</ul>
+<p><strong>Don&rsquo;t use KEDA when:</strong></p>
+<ul>
+<li>Your workload is truly CPU-bound (machine learning, video processing)</li>
+<li>You need to scale based on custom application logic</li>
+<li>Your queue system doesn&rsquo;t expose metrics (implement that first)</li>
+</ul>
+<h2 id="common-mistakes">Common Mistakes</h2>
+<p>❌ <strong>Using HPA with CPU for queue workloads</strong> — CPU is a lagging indicator. Queue depth is the truth signal.</p>
+<p>❌ <strong>Setting minReplicaCount to 1 for always-on workloads</strong> — Forces constant pod startup. Set min to handle baseline load comfortably.</p>
+<p>❌ <strong>Threshold too low (e.g., 500 messages)</strong> — Causes constant scaling up/down. Pod startup cost exceeds any benefit.</p>
+<p>❌ <strong>Threshold too high (e.g., 100,000 messages)</strong> — Queue builds up before scaling triggers. By the time pods are ready, messages are old.</p>
+<p>❌ <strong>No maxReplicaCount</strong> — Runaway scaling exhausts cluster resources. Always set an upper bound.</p>
+<h2 id="operations">Operations</h2>
+<h3 id="monitoring-queue-health">Monitoring Queue Health</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Watch queue depth over time</span>
+</span></span><span style="display:flex;"><span>kubectl port-forward -n prometheus prometheus-0 9090:9090
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Then in Prometheus UI: graph rabbitmq_queue_messages_ready</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check current replica count</span>
+</span></span><span style="display:flex;"><span>kubectl get deployment data-processor-worker -n prod
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check KEDA status</span>
+</span></span><span style="display:flex;"><span>kubectl get scaledobject -n prod
+</span></span><span style="display:flex;"><span>kubectl describe scaledobject data-processor-worker-scaler -n prod
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check KEDA logs</span>
+</span></span><span style="display:flex;"><span>kubectl logs -n keda deployment/keda-operator
+</span></span></code></pre></div><h3 id="manual-testing">Manual Testing</h3>
+<p>Scale down to baseline:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl patch deployment data-processor-worker -p <span style="color:#e6db74">&#39;{&#34;spec&#34;:{&#34;replicas&#34;:16}}&#39;</span>
+</span></span></code></pre></div><p>Verify KEDA scales back up when queue fills.</p>
+<h2 id="the-pattern">The Pattern</h2>
+<p>Queue workloads need the right autoscaling signal:</p>
+<ol>
+<li><strong>Event source</strong> — Your queue exposing metrics (RabbitMQ to Prometheus, SQS to CloudWatch, etc.)</li>
+<li><strong>Metrics collection</strong> — Prometheus, CloudWatch, or KEDA&rsquo;s native queue scalers</li>
+<li><strong>KEDA</strong> — Watches metrics, scales deployments</li>
+<li><strong>Right configuration</strong> — Appropriate minReplicaCount, threshold, polling, and cooldown</li>
+</ol>
+<p>This pattern works whether you have 100 messages per hour or 1 million messages per minute.</p>
+<p>The key insight: <strong>Stop scaling on CPU. Start scaling on queue depth.</strong></p>
+<hr>
+<p><strong>Getting Started:</strong> KEDA has <a href="https://keda.sh">excellent documentation</a> and <a href="https://keda.sh/docs/scalers/">50+ scalers</a> for different event sources. The GitHub repo is <a href="https://github.com/kedacore/keda">kedacore/keda</a>.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/index.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/theme.js"></script>
+
+</body>
+</html>
+

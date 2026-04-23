@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" Kubernetes Node Autoscaling: When Pod Scaling Isn&#39;t the Answer &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="http://192.168.160.249:1313/post/node-autoscaling-cluster-autoscaler/" />
+    <meta property="og:image" content="http://192.168.160.249:1313/img/cluster-autoscaler-header.jpg" />
+    <meta property="og:description" content="HPA scales pods, but pods can&#39;t run if there&#39;s no space on the cluster. Learn why cluster autoscaling is the answer for bursty, unpredictable workloads. Includes pod disruption budgets, graceful shutdown, and real patterns for scaling nodes alongside pod autoscaling." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-05-15T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="autoscaling-series" />
+    
+    <meta property="og:article:tag" content="kubernetes" />
+    
+    <meta property="og:article:tag" content="infrastructure" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="cluster-autoscaler" />
+    
+    <meta property="og:article:tag" content="node-scaling" />
+    
+    <meta property="og:article:tag" content="autoscaling" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     Kubernetes Node Autoscaling: When Pod Scaling Isn&#39;t the Answer &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="http://192.168.160.249:1313/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="http://192.168.160.249:1313/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="http://192.168.160.249:1313/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="http://192.168.160.249:1313/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="http://192.168.160.249:1313/post/node-autoscaling-cluster-autoscaler/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="http://192.168.160.249:1313/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(http://192.168.160.249:1313/img/cluster-autoscaler-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="http://192.168.160.249:1313/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">Kubernetes Node Autoscaling: When Pod Scaling Isn&#39;t the Answer</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-05-15T00:00:00Z">
+            May 15, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/autoscaling-series/">#autoscaling-series</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/kubernetes/">#kubernetes</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/infrastructure/">#infrastructure</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/cluster-autoscaler/">#cluster-autoscaler</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/node-scaling/">#node-scaling</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/autoscaling/">#autoscaling</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>You&rsquo;ve scaled pods with HPA. Works great.</p>
+<p>Then you hit a traffic spike. HPA spins up 50 new pods to handle the load.</p>
+<p>But something&rsquo;s wrong: they&rsquo;re all showing &ldquo;Pending.&rdquo;</p>
+<p>The scheduler can&rsquo;t place them. No nodes have capacity. HPA created the pods, but they&rsquo;re sitting idle consuming API quota while your customers see timeouts.</p>
+<p>This is when pod autoscaling isn&rsquo;t enough. You need cluster autoscaling.</p>
+<h2 id="the-problem">The Problem</h2>
+<p>Pod-level autoscaling assumes you have nodes with available resources. For bursty, unpredictable workloads, that assumption breaks.</p>
+<p>Real scenarios where this fails:</p>
+<p><strong>Spike 1: News breaks</strong></p>
+<ul>
+<li>Requests jump from normal to 10x in seconds</li>
+<li>HPA detects high CPU, spins up 100 new pods</li>
+<li>Nodes are full. Pods sit pending.</li>
+<li>Cluster has no capacity to add more pods</li>
+<li>Customers timeout while idle pods wait for scheduling</li>
+</ul>
+<p><strong>Spike 2: Time-sensitive event</strong></p>
+<ul>
+<li>Election day, breaking news, product launch</li>
+<li>Unpredictable traffic, no prior warning</li>
+<li>Can&rsquo;t pre-provision nodes for &ldquo;unknown unknowns&rdquo;</li>
+<li>HPA is useless if there&rsquo;s nowhere to run pods</li>
+</ul>
+<p><strong>Spike 3: Mixed workload sizes</strong></p>
+<ul>
+<li>Some pods need 2GB memory, others need 16GB</li>
+<li>Can&rsquo;t pack 16GB pod on a node with only 4GB free</li>
+<li>Cluster needs different node sizes, not just more replicas</li>
+</ul>
+<p>Pod autoscaling alone answers the wrong question: &ldquo;How many copies of my app?&rdquo; It ignores the real question: &ldquo;Can my cluster hold all these pods?&rdquo;</p>
+<h2 id="the-solution-cluster-autoscaler">The Solution: Cluster Autoscaler</h2>
+<p>Cluster Autoscaler watches cluster capacity and adds/removes nodes based on actual demand.</p>
+<p><strong>How it works:</strong></p>
+<ol>
+<li>Traffic spike hits</li>
+<li>HPA (or manual scaling) creates new pods</li>
+<li>Pods can&rsquo;t fit → they show &ldquo;Pending&rdquo;</li>
+<li>Cluster Autoscaler detects pending pods</li>
+<li>Requests new node from cloud provider</li>
+<li>Scheduler places pending pods on new node</li>
+<li>Pods start serving traffic</li>
+</ol>
+<p>And for scale-down:</p>
+<ol>
+<li>Traffic returns to normal</li>
+<li>Pods finish or scale down</li>
+<li>Nodes become empty</li>
+<li>Cluster Autoscaler detects empty nodes</li>
+<li>Respects pod disruption budgets (doesn&rsquo;t evict critical pods)</li>
+<li>Drains remaining pods gracefully (30+ minute timeout)</li>
+<li>Removes empty node</li>
+</ol>
+<h2 id="configuration">Configuration</h2>
+<p><strong>Basic setup:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">apps/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Deployment</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">cluster-autoscaler</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">kube-system</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">replicas</span>: <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">app</span>: <span style="color:#ae81ff">cluster-autoscaler</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">template</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">labels</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">app</span>: <span style="color:#ae81ff">cluster-autoscaler</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">serviceAccountName</span>: <span style="color:#ae81ff">cluster-autoscaler</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">containers</span>:
+</span></span><span style="display:flex;"><span>        - <span style="color:#f92672">image</span>: <span style="color:#ae81ff">k8s.gcr.io/autoscaling/cluster-autoscaler:v1.28.0</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">name</span>: <span style="color:#ae81ff">cluster-autoscaler</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">args</span>:
+</span></span><span style="display:flex;"><span>            - --<span style="color:#ae81ff">v=4</span>
+</span></span><span style="display:flex;"><span>            - --<span style="color:#ae81ff">stderrthreshold=info</span>
+</span></span><span style="display:flex;"><span>            - --<span style="color:#ae81ff">cloud-provider=aws             </span> <span style="color:#75715e"># or gcp, azure, custom</span>
+</span></span><span style="display:flex;"><span>            - --<span style="color:#ae81ff">nodes=4:10:my-asg              </span> <span style="color:#75715e"># Min 4, Max 10, ASG name</span>
+</span></span><span style="display:flex;"><span>            - --<span style="color:#ae81ff">skip-nodes-with-local-storage=false</span>
+</span></span><span style="display:flex;"><span>            - --<span style="color:#ae81ff">skip-nodes-with-system-pods=false</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">env</span>:
+</span></span><span style="display:flex;"><span>            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">AWS_REGION</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">value</span>: <span style="color:#e6db74">&#34;us-west-2&#34;</span>
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">resources</span>:
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">requests</span>:
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">cpu</span>: <span style="color:#ae81ff">100m</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">memory</span>: <span style="color:#ae81ff">300Mi</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">limits</span>:
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">cpu</span>: <span style="color:#ae81ff">100m</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">memory</span>: <span style="color:#ae81ff">300Mi</span>
+</span></span></code></pre></div><p><strong>Key parameters:</strong></p>
+<ul>
+<li><strong><code>--cloud-provider</code></strong> — AWS, GCP, Azure, or custom</li>
+<li><strong><code>--nodes=min:max:pool-name</code></strong> — Min/max node counts and node pool</li>
+<li><strong><code>--skip-nodes-with-local-storage</code></strong> — Can we drain nodes with local data?</li>
+<li><strong><code>--skip-nodes-with-system-pods</code></strong> — Can we drain system pods?</li>
+</ul>
+<p>Different cloud providers use different node group naming:</p>
+<ul>
+<li>AWS: Auto Scaling Group (ASG) name</li>
+<li>GCP: Node pool name</li>
+<li>Azure: VM scale set name</li>
+<li>Custom/Private: FlowSwiss, custom Kubernetes platforms, or any provisioning system</li>
+</ul>
+<h2 id="critical-pod-disruption-budgets">Critical: Pod Disruption Budgets</h2>
+<p>Without Pod Disruption Budgets (PDBs), cluster autoscaler can evict critical pods mid-processing, causing data loss and cascade failures.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">policy/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">PodDisruptionBudget</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">critical-pipeline-pdb</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span>: <span style="color:#ae81ff">prod</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">minAvailable</span>: <span style="color:#ae81ff">1</span>           <span style="color:#75715e"># Always keep at least 1 replica</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">matchLabels</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">app</span>: <span style="color:#ae81ff">critical-pipeline</span>
+</span></span></code></pre></div><p><strong>How it works during scale-down:</strong></p>
+<ol>
+<li>Node marked for removal</li>
+<li>Kubelet sends SIGTERM to pods</li>
+<li>Pod has <code>terminationGracePeriodSeconds: 1800</code> (30 minutes)</li>
+<li>Pod&rsquo;s graceful shutdown code: Finish current batch, flush queues, close connections</li>
+<li>Pod exits cleanly</li>
+<li>Node is removed</li>
+</ol>
+<p>If a pod doesn&rsquo;t exit in 30 minutes, it&rsquo;s forcefully killed. With proper graceful shutdown code, this rarely happens.</p>
+<p><strong>Without PDB:</strong> Cluster autoscaler can&rsquo;t respect pod constraints. It might evict a critical pod that&rsquo;s processing data, causing loss.</p>
+<p><strong>With PDB:</strong> Cluster autoscaler knows to leave at least 1 replica running at all times.</p>
+<h2 id="real-numbers">Real Numbers</h2>
+<p><strong>Before (manual node management):</strong></p>
+<ul>
+<li>Ops team monitors queue depth, manually adds nodes when capacity looks low</li>
+<li>Overprovision to avoid being caught off-guard (80-90% utilization)</li>
+<li>Scale-down happens once per week in scheduled maintenance</li>
+<li>Cost: Always running at high capacity &ldquo;just in case&rdquo;</li>
+<li>Latency during spikes: 15-30 minutes (waiting for manual node addition)</li>
+</ul>
+<p><strong>After (cluster autoscaler):</strong></p>
+<ul>
+<li>Cluster starts at 4 nodes (baseline)</li>
+<li>Spike hits → pods pending → node added automatically (2-3 minutes)</li>
+<li>New pods scheduled, traffic served (latency ~5 minutes total)</li>
+<li>Spike ends → nodes empty → removed automatically</li>
+<li>Cost: Only pay for what you use</li>
+<li>Latency during spikes: 5-10 minutes (automatic response)</li>
+</ul>
+<h2 id="hpa--cluster-autoscaler-together">HPA + Cluster Autoscaler Together</h2>
+<p>Use both for best results:</p>
+<pre tabindex="0"><code>┌─────────────┐
+│ Traffic     │
+│ Spike       │
+└──────┬──────┘
+       │
+       ├→ HPA: Scale pods from 10 to 50
+       │
+       ├→ Scheduler: Can&#39;t fit 40 new pods
+       │
+       ├→ Cluster Autoscaler: Adds 3 new nodes
+       │
+       └→ Scheduler: Places pending pods
+              Pods run, traffic served
+</code></pre><p><strong>HPA responsibility:</strong> &ldquo;How many replicas of my app?&rdquo;
+<strong>Cluster Autoscaler responsibility:</strong> &ldquo;Do I have nodes to run them?&rdquo;</p>
+<p>They&rsquo;re answering different questions.</p>
+<h2 id="when-to-use-what">When to Use What</h2>
+<p><strong>Use HPA (pod autoscaling) for:</strong></p>
+<ul>
+<li>Always-on services (APIs, web servers)</li>
+<li>Predictable or gradual load changes</li>
+<li>Stable pod resource requests</li>
+<li>You know the max replica count</li>
+</ul>
+<p><strong>Use Cluster Autoscaler (node autoscaling) for:</strong></p>
+<ul>
+<li>Bursty or unpredictable workloads</li>
+<li>Diverse pod sizes (some need 2GB, others 16GB)</li>
+<li>You can&rsquo;t predict pod count</li>
+<li>Scaling pods without scaling nodes is pointless</li>
+</ul>
+<p><strong>Use both:</strong></p>
+<ul>
+<li>Mixed workloads (always-on services + bursty processing)</li>
+<li>HPA handles pod optimization</li>
+<li>Cluster autoscaler handles cluster capacity</li>
+</ul>
+<h2 id="common-mistakes">Common Mistakes</h2>
+<p>❌ <strong>Using HPA alone for bursty workloads</strong></p>
+<ul>
+<li>Pods sit pending forever</li>
+<li>Wasted API calls</li>
+<li>Frustrated users</li>
+</ul>
+<p>❌ <strong>Not setting resource requests</strong></p>
+<ul>
+<li>Scheduler can&rsquo;t pack pods</li>
+<li>Cluster autoscaler adds wrong-sized nodes</li>
+<li>Cascade failures when pods exceed requests</li>
+</ul>
+<p>❌ <strong>No pod disruption budgets</strong></p>
+<ul>
+<li>Pods evicted mid-processing</li>
+<li>Data loss, transaction rollbacks</li>
+<li>Cascade failures</li>
+</ul>
+<p>❌ <strong>Max nodes too high</strong></p>
+<ul>
+<li>Runaway scaling during spike</li>
+<li>Shocking bills at month end</li>
+<li>No spending ceiling</li>
+</ul>
+<p>❌ <strong>Min nodes too low</strong></p>
+<ul>
+<li>Baseline services can&rsquo;t run</li>
+<li>First scale-up takes forever (node provisioning overhead)</li>
+</ul>
+<h2 id="operations">Operations</h2>
+<p><strong>Monitor pending pods:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Watch for pods that can&#39;t be scheduled</span>
+</span></span><span style="display:flex;"><span>kubectl get pods -A --field-selector<span style="color:#f92672">=</span>status.phase<span style="color:#f92672">=</span>Pending
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check node capacity</span>
+</span></span><span style="display:flex;"><span>kubectl top nodes
+</span></span><span style="display:flex;"><span>kubectl describe node &lt;node-name&gt;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check cluster autoscaler logs</span>
+</span></span><span style="display:flex;"><span>kubectl logs -n kube-system deployment/cluster-autoscaler
+</span></span></code></pre></div><p><strong>During a spike:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Monitor autoscaler response</span>
+</span></span><span style="display:flex;"><span>watch kubectl get nodes
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check pod placement</span>
+</span></span><span style="display:flex;"><span>kubectl get pods -w
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Verify graceful shutdown (30-minute default)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Adjust if needed</span>
+</span></span><span style="display:flex;"><span>kubectl patch pod &lt;name&gt; -p <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  <span style="color:#e6db74">&#39;{&#34;spec&#34;:{&#34;terminationGracePeriodSeconds&#34;:1800}}&#39;</span>
+</span></span></code></pre></div><h2 id="getting-started">Getting Started</h2>
+<ol>
+<li>
+<p><strong>Choose your cloud provider:</strong></p>
+<ul>
+<li>AWS: Use Auto Scaling Groups</li>
+<li>GCP: Use Node Pools</li>
+<li>Azure: Use VM Scale Sets</li>
+<li>Custom/Private: FlowSwiss, custom Kubernetes platforms, or implement custom cloud provider driver</li>
+</ul>
+</li>
+<li>
+<p><strong>Deploy cluster autoscaler:</strong></p>
+<ul>
+<li>Use official Helm chart or YAML manifests</li>
+<li>Configure min/max nodes and node pool names</li>
+<li>Set resource requests/limits</li>
+</ul>
+</li>
+<li>
+<p><strong>Add pod disruption budgets:</strong></p>
+<ul>
+<li>Critical pods: <code>minAvailable: 1</code></li>
+<li>Less critical: <code>minAvailable: 0</code> with budget rules</li>
+<li>Always set <code>terminationGracePeriodSeconds</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Test scale-up and scale-down:</strong></p>
+<ul>
+<li>Trigger traffic spike, verify nodes are added</li>
+<li>Let spike subside, verify nodes are removed</li>
+<li>Check pod disruption budgets are respected</li>
+</ul>
+</li>
+</ol>
+<h2 id="the-key-insight">The Key Insight</h2>
+<p>Pod autoscaling asks: &ldquo;How many copies do I need?&rdquo;</p>
+<p>Cluster autoscaling asks: &ldquo;Do I have capacity to run them?&rdquo;</p>
+<p>For unpredictable, bursty workloads, the second question matters more. Cluster Autoscaler gives you reactive capacity that grows and shrinks with actual demand.</p>
+<hr>
+<p><strong>This concludes the autoscaling series:</strong> Pod autoscaling with metrics → Queue-based scaling with KEDA → Cluster autoscaling for unpredictable demand. Together, they handle any workload pattern Kubernetes can throw at you.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/index.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/theme.js"></script>
+
+</body>
+</html>
+

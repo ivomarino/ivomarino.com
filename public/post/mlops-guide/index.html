@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" From Data Science to Production: MLOps CI/CD Pipeline with Real-time Accuracy Monitoring &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="https://ivomarino.com/post/mlops-guide/" />
+    <meta property="og:image" content="https://ivomarino.com/img/mlops-header.jpg" />
+    <meta property="og:description" content="Production machine learning requires more than training good models. This guide covers building a complete MLOps system with Kubernetes, Prometheus monitoring, and automated accuracy checks to catch model drift and prevent silent failures in production." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-03-27T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="mlops" />
+    
+    <meta property="og:article:tag" content="kubernetes" />
+    
+    <meta property="og:article:tag" content="machine-learning" />
+    
+    <meta property="og:article:tag" content="platform-engineering" />
+    
+    <meta property="og:article:tag" content="devops" />
+    
+    <meta property="og:article:tag" content="sre" />
+    
+    
+
+  <title>
+     From Data Science to Production: MLOps CI/CD Pipeline with Real-time Accuracy Monitoring &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Production machine learning requires more than training good models. This guide covers building a complete MLOps system with Kubernetes, Prometheus monitoring, and automated accuracy checks to catch model drift and prevent silent failures in production." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://ivomarino.com/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="https://ivomarino.com/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="https://ivomarino.com/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="https://ivomarino.com/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="https://ivomarino.com/post/mlops-guide/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="https://ivomarino.com/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(https://ivomarino.com/img/mlops-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="https://ivomarino.com/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">From Data Science to Production: MLOps CI/CD Pipeline with Real-time Accuracy Monitoring</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-03-27T00:00:00Z">
+            Mar 27, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/mlops/">#mlops</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/kubernetes/">#kubernetes</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/machine-learning/">#machine-learning</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/platform-engineering/">#platform-engineering</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/devops/">#devops</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/sre/">#sre</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <h2 id="the-problem">The Problem</h2>
+<p>Your data science team trained an amazing ML model. Accuracy on test data: 94%.</p>
+<p>You deploy it to Kubernetes. It runs great for 2 weeks.</p>
+<p>Then accuracy silently drops to 72%.</p>
+<p>Nobody notices for 10 days. By the time you catch it, the model has made 50,000 bad predictions.</p>
+<p>This is the MLOps problem in a nutshell: <strong>models decay, and without monitoring, you won&rsquo;t know until it&rsquo;s too late.</strong></p>
+<hr>
+<h2 id="the-reality-why-models-fail-in-production">The Reality: Why Models Fail in Production</h2>
+<h3 id="its-not-the-training-code-that-breaks">It&rsquo;s Not the Training Code That Breaks</h3>
+<p>Your training pipeline works fine. You can rerun it on the same data, get the same model. The code is solid.</p>
+<p>The problem is <strong>data drift</strong>. In production, your input data changes:</p>
+<ul>
+<li>User behavior shifts seasonally</li>
+<li>Feature distributions morph over time</li>
+<li>Edge cases you never saw in training appear in production</li>
+<li>The world changes, but your model doesn&rsquo;t</li>
+</ul>
+<h3 id="the-traditional-approach-manual-and-fragile">The Traditional Approach (Manual and Fragile)</h3>
+<p>Most teams handle ML deployment like this:</p>
+<ol>
+<li>Data scientist trains a model locally</li>
+<li>&ldquo;It&rsquo;s ready&rdquo; - they export a pickle file or ONNX model</li>
+<li>Engineer manually packages it into a Docker image</li>
+<li>It gets deployed to Kubernetes (maybe)</li>
+<li>It runs for a while</li>
+<li>Something breaks (nobody&rsquo;s monitoring)</li>
+<li>Someone manually checks logs</li>
+<li>Maybe they retrain, maybe they downgrade the model</li>
+<li>Repeat 6-8 three months later</li>
+</ol>
+<p><strong>The problem:</strong> Every step is manual. No automation. No feedback loop. No recovery.</p>
+<h3 id="why-this-breaks-at-scale">Why This Breaks at Scale</h3>
+<ul>
+<li><strong>No versioning:</strong> Which model version is running? What data trained it? Unknown.</li>
+<li><strong>No testing:</strong> Did you test the model against a held-out dataset? Just hope it works.</li>
+<li><strong>No monitoring:</strong> Is accuracy degrading? You won&rsquo;t know until someone complains.</li>
+<li><strong>No retraining:</strong> When drift happens, you manually trigger retraining (if you remember).</li>
+<li><strong>No governance:</strong> Audit trail? Compliance? Good luck explaining to regulators.</li>
+</ul>
+<hr>
+<h2 id="the-solution-mlops-with-kubernetes--prometheus--automated-monitoring">The Solution: MLOps with Kubernetes + Prometheus + Automated Monitoring</h2>
+<p><strong>MLOps is the engineering discipline that brings DevOps practices to machine learning.</strong></p>
+<p>Instead of manually managing model deployment, you:</p>
+<ol>
+<li><strong>Automate the entire pipeline</strong> - data validation → training → testing → deployment</li>
+<li><strong>Monitor model performance</strong> - accuracy, precision, recall, and data drift in real-time</li>
+<li><strong>Trigger retraining automatically</strong> - when drift is detected or on schedule</li>
+<li><strong>Test before deployment</strong> - validate model accuracy matches thresholds</li>
+<li><strong>Deploy safely</strong> - staged rollouts, canary deployments, instant rollback</li>
+</ol>
+<hr>
+<h2 id="our-approach-kubernetes-native-mlops">Our Approach: Kubernetes-Native MLOps</h2>
+<p>We built a production ML system on Kubernetes with these components:</p>
+<h3 id="1-automated-training-pipeline-orchestration">1. <strong>Automated Training Pipeline</strong> (Orchestration)</h3>
+<p>Using Kubernetes CronJobs + custom training containers:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">batch/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">CronJob</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">ml-retraining-pipeline</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">schedule</span>: <span style="color:#e6db74">&#34;0 2 * * *&#34;</span>  <span style="color:#75715e"># Runs daily at 2 AM</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">jobTemplate</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">template</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#f92672">containers</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">trainer</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">image</span>: <span style="color:#ae81ff">myrepo/ml-trainer:latest</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#f92672">env</span>:
+</span></span><span style="display:flex;"><span>            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">TRAINING_DATASET</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">value</span>: <span style="color:#e6db74">&#34;s3://ml-data/training/&#34;</span>
+</span></span><span style="display:flex;"><span>            - <span style="color:#f92672">name</span>: <span style="color:#ae81ff">MODEL_REGISTRY</span>
+</span></span><span style="display:flex;"><span>              <span style="color:#f92672">value</span>: <span style="color:#e6db74">&#34;http://mlflow:5000&#34;</span>
+</span></span></code></pre></div><p><strong>What it does:</strong></p>
+<ul>
+<li>Fetches fresh data from S3 (or your data warehouse)</li>
+<li>Validates data quality (schema, statistical properties, anomalies)</li>
+<li>Trains the model from scratch</li>
+<li>Compares new model accuracy against baseline</li>
+<li>If accuracy passes threshold: register in MLflow Model Registry</li>
+<li>If accuracy fails: alert, don&rsquo;t deploy</li>
+</ul>
+<h3 id="2-model-registry-version-control-for-models">2. <strong>Model Registry</strong> (Version Control for Models)</h3>
+<p>Using MLflow Model Registry:</p>
+<ul>
+<li>Every trained model is registered with metadata</li>
+<li>Tracks training dataset version, hyperparameters, metrics</li>
+<li>Maintains full lineage (which code, which data, which environment)</li>
+<li>Enables rollback to previous model versions</li>
+</ul>
+<pre tabindex="0"><code>Model: fraud-detector
+├── Version 1 (staging) - acc: 91.2%
+├── Version 2 (staging) - acc: 93.1%
+└── Version 3 (production) - acc: 93.1% (deployed 2 days ago)
+</code></pre><h3 id="3-staged-deployment-testing-before-production">3. <strong>Staged Deployment</strong> (Testing Before Production)</h3>
+<pre tabindex="0"><code>Data Flow: Training Data → Validation → Staging → Production
+
+Staging Environment:
+- Receives 10% of live traffic (shadow mode)
+- Model makes predictions but doesn&#39;t affect users
+- Prometheus compares staging accuracy vs baseline
+
+If staging accuracy meets threshold (93%+) → Approve for production
+</code></pre><h3 id="4-real-time-accuracy-monitoring-prometheus">4. <strong>Real-time Accuracy Monitoring</strong> (Prometheus)</h3>
+<p>This is the critical piece. You need to track model accuracy in production:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#75715e"># Prometheus config for ML metrics</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">global</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">scrape_interval</span>: <span style="color:#ae81ff">15s</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">scrape_configs</span>:
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">job_name</span>: <span style="color:#e6db74">&#39;ml-inference&#39;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">static_configs</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">targets</span>: [<span style="color:#e6db74">&#39;ml-service:8000&#39;</span>]
+</span></span></code></pre></div><p>Your ML service exposes metrics:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> prometheus_client <span style="color:#f92672">import</span> Counter, Gauge, Histogram
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Counters</span>
+</span></span><span style="display:flex;"><span>predictions_total <span style="color:#f92672">=</span> Counter(<span style="color:#e6db74">&#39;ml_predictions_total&#39;</span>, <span style="color:#e6db74">&#39;Total predictions&#39;</span>, [<span style="color:#e6db74">&#39;model&#39;</span>, <span style="color:#e6db74">&#39;outcome&#39;</span>])
+</span></span><span style="display:flex;"><span>correct_predictions <span style="color:#f92672">=</span> Counter(<span style="color:#e6db74">&#39;ml_correct_predictions_total&#39;</span>, <span style="color:#e6db74">&#39;Correct predictions&#39;</span>, [<span style="color:#e6db74">&#39;model&#39;</span>])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Gauges</span>
+</span></span><span style="display:flex;"><span>model_accuracy <span style="color:#f92672">=</span> Gauge(<span style="color:#e6db74">&#39;ml_model_accuracy&#39;</span>, <span style="color:#e6db74">&#39;Current model accuracy&#39;</span>, [<span style="color:#e6db74">&#39;model&#39;</span>])
+</span></span><span style="display:flex;"><span>data_drift_score <span style="color:#f92672">=</span> Gauge(<span style="color:#e6db74">&#39;ml_data_drift_score&#39;</span>, <span style="color:#e6db74">&#39;Feature distribution drift&#39;</span>, [<span style="color:#e6db74">&#39;model&#39;</span>])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># In your inference code:</span>
+</span></span><span style="display:flex;"><span>prediction <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict(features)
+</span></span><span style="display:flex;"><span>actual_label <span style="color:#f92672">=</span> get_ground_truth(request_id)  <span style="color:#75715e"># From async feedback loop</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> prediction <span style="color:#f92672">==</span> actual_label:
+</span></span><span style="display:flex;"><span>    correct_predictions<span style="color:#f92672">.</span>labels(model<span style="color:#f92672">=</span>model_name)<span style="color:#f92672">.</span>inc()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>predictions_total<span style="color:#f92672">.</span>labels(model<span style="color:#f92672">=</span>model_name, outcome<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;correct&#39;</span> <span style="color:#66d9ef">if</span> prediction <span style="color:#f92672">==</span> actual_label <span style="color:#66d9ef">else</span> <span style="color:#e6db74">&#39;incorrect&#39;</span>)<span style="color:#f92672">.</span>inc()
+</span></span></code></pre></div><h3 id="5-automated-alerts-on-drift">5. <strong>Automated Alerts on Drift</strong></h3>
+<p>Prometheus alerting rules:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">groups</span>:
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">name</span>: <span style="color:#ae81ff">ml_alerts</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">interval</span>: <span style="color:#ae81ff">30s</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">rules</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alert</span>: <span style="color:#ae81ff">ModelAccuracyDegraded</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">expr</span>: <span style="color:#ae81ff">ml_model_accuracy &lt; 0.90 </span> <span style="color:#75715e"># Alert if accuracy drops below 90%</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">for</span>: <span style="color:#ae81ff">5m</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">annotations</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">summary</span>: <span style="color:#e6db74">&#34;Model accuracy dropped to {{ $value }}&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">action</span>: <span style="color:#e6db74">&#34;Check data drift. Consider retraining.&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#f92672">alert</span>: <span style="color:#ae81ff">DataDriftDetected</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">expr</span>: <span style="color:#ae81ff">ml_data_drift_score &gt; 0.15</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">for</span>: <span style="color:#ae81ff">10m</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">annotations</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">summary</span>: <span style="color:#e6db74">&#34;Feature distribution shifted significantly&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">action</span>: <span style="color:#e6db74">&#34;Trigger emergency retraining&#34;</span>
+</span></span></code></pre></div><p>When accuracy drops below 90%, you:</p>
+<ol>
+<li><strong>Get notified immediately</strong></li>
+<li><strong>Automatically trigger retraining</strong></li>
+<li><strong>Compare new model vs baseline</strong></li>
+<li><strong>If better: deploy to staging</strong></li>
+<li><strong>If worse: rollback to previous version</strong></li>
+</ol>
+<hr>
+<h2 id="practical-example-credit-risk-model">Practical Example: Credit Risk Model</h2>
+<h3 id="the-setup">The Setup</h3>
+<p>You have a credit risk model that predicts loan default probability.</p>
+<ul>
+<li>Training: 100K historical loans, 2% default rate</li>
+<li>Production: Running on Kubernetes, serving 500 requests/day</li>
+<li>Accuracy in test set: 94%</li>
+</ul>
+<h3 id="week-1-everything-works">Week 1: Everything Works</h3>
+<ul>
+<li>Model accuracy: 93.8% ✓</li>
+<li>Data drift: 0.05 (normal)</li>
+<li>All systems green</li>
+</ul>
+<h3 id="week-3-silent-failure">Week 3: Silent Failure</h3>
+<ul>
+<li>Economy shifts: unemployment rises</li>
+<li>Default patterns change</li>
+<li>Model still predicts based on old economic patterns</li>
+<li>Model accuracy: 68% (unnoticed for 3 days)</li>
+<li>1,200 bad predictions made</li>
+</ul>
+<p><strong>Without MLOps:</strong> You find out when the business notices the loan portfolio is worse than expected.</p>
+<p><strong>With MLOps:</strong></p>
+<ul>
+<li>Day 1, hour 3: Prometheus alert fires</li>
+<li>Alert triggers automated retraining</li>
+<li>New model trained on last week&rsquo;s data (with new economic patterns)</li>
+<li>New model accuracy: 89% (not perfect, but better)</li>
+<li>Model deployed to staging automatically</li>
+<li>Accuracy verified in shadow mode</li>
+<li>Model promoted to production</li>
+<li>Total downtime: 2 hours instead of 72 hours</li>
+</ul>
+<hr>
+<h2 id="the-mlops-maturity-progression">The MLOps Maturity Progression</h2>
+<h3 id="level-0-manual-everything-typical-today">Level 0: Manual Everything (Typical Today)</h3>
+<ul>
+<li>Train model locally</li>
+<li>Export pickle/ONNX manually</li>
+<li>Docker image built manually</li>
+<li>Deployed manually to Kubernetes</li>
+<li>Zero monitoring</li>
+<li>Zero retraining automation</li>
+</ul>
+<h3 id="level-1-automated-training-easy-starting-point">Level 1: Automated Training (Easy Starting Point)</h3>
+<ul>
+<li>Training pipeline triggers on schedule (CronJob)</li>
+<li>Data validation in pipeline</li>
+<li>Model automatically registered in MLflow</li>
+<li>Still manual deployment decision</li>
+</ul>
+<h3 id="level-2-full-cicd-our-approach">Level 2: Full CI/CD (Our Approach)</h3>
+<ul>
+<li>Automated training on schedule + drift detection</li>
+<li>Automated testing (accuracy threshold checks)</li>
+<li>Automated deployment to staging (shadow mode)</li>
+<li>Real-time accuracy monitoring (Prometheus)</li>
+<li>Automated promotion to production if staging passes</li>
+<li>Automated retraining on drift detection</li>
+<li>Instant rollback if accuracy drops</li>
+</ul>
+<hr>
+<h2 id="implementation-checklist">Implementation Checklist</h2>
+<p>To build this yourself on Kubernetes:</p>
+<h3 id="1-monitoring--metrics">1. <strong>Monitoring &amp; Metrics</strong></h3>
+<ul>
+<li><input disabled="" type="checkbox"> Prometheus deployed on cluster</li>
+<li><input disabled="" type="checkbox"> ML service exposes Prometheus metrics (predictions, accuracy, drift)</li>
+<li><input disabled="" type="checkbox"> Grafana dashboards for visualization</li>
+<li><input disabled="" type="checkbox"> Alert rules for accuracy degradation and drift</li>
+</ul>
+<h3 id="2-model-training-pipeline">2. <strong>Model Training Pipeline</strong></h3>
+<ul>
+<li><input disabled="" type="checkbox"> CronJob for regular retraining</li>
+<li><input disabled="" type="checkbox"> Data validation step (schema, distributions)</li>
+<li><input disabled="" type="checkbox"> Model training containerized</li>
+<li><input disabled="" type="checkbox"> Accuracy testing before registration</li>
+</ul>
+<h3 id="3-model-registry">3. <strong>Model Registry</strong></h3>
+<ul>
+<li><input disabled="" type="checkbox"> MLflow deployed</li>
+<li><input disabled="" type="checkbox"> Training pipeline registers models automatically</li>
+<li><input disabled="" type="checkbox"> Metadata tracked (dataset version, hyperparameters, metrics)</li>
+</ul>
+<h3 id="4-staged-deployment">4. <strong>Staged Deployment</strong></h3>
+<ul>
+<li><input disabled="" type="checkbox"> Two ML service deployments (staging + production)</li>
+<li><input disabled="" type="checkbox"> Traffic mirroring or shadow mode for staging</li>
+<li><input disabled="" type="checkbox"> Automated promotion based on accuracy threshold</li>
+</ul>
+<h3 id="5-automated-retraining">5. <strong>Automated Retraining</strong></h3>
+<ul>
+<li><input disabled="" type="checkbox"> Prometheus alerts trigger Kubernetes Job</li>
+<li><input disabled="" type="checkbox"> Or: CronJob checks drift score, triggers if needed</li>
+<li><input disabled="" type="checkbox"> New model compared against baseline</li>
+<li><input disabled="" type="checkbox"> Auto-rollback if model degrades</li>
+</ul>
+<hr>
+<h2 id="key-lessons">Key Lessons</h2>
+<ol>
+<li>
+<p><strong>Monitor accuracy, not just infrastructure</strong> - CPU and memory are fine. Your model might be terrible.</p>
+</li>
+<li>
+<p><strong>Data drift is silent</strong> - Models don&rsquo;t throw errors. They just gradually get worse.</p>
+</li>
+<li>
+<p><strong>Staging is critical</strong> - Test model accuracy on 10% of real traffic before going 100%</p>
+</li>
+<li>
+<p><strong>Automate the loop</strong> - Without automation, you&rsquo;ll miss drift because nobody&rsquo;s monitoring 24/7</p>
+</li>
+<li>
+<p><strong>Reproducibility matters</strong> - Keep full lineage: training data version, code version, hyperparameters, metrics</p>
+</li>
+<li>
+<p><strong>Speed matters</strong> - From alert to retraining to deployment should be minutes, not days</p>
+</li>
+</ol>
+<hr>
+<h2 id="what-were-not-covering-yet">What We&rsquo;re Not Covering (Yet)</h2>
+<ul>
+<li>Feature stores (Tecton, Feast) - manage features consistently across training/serving</li>
+<li>Advanced drift detection (Evidently AI, WhyLabs) - detect distribution shift automatically</li>
+<li>Online learning - retraining on single examples as feedback arrives</li>
+<li>Causal inference - understanding why accuracy changed</li>
+<li>Multi-armed bandits - A/B testing different models in production</li>
+</ul>
+<p>These are Level 3 optimizations. Start with the basics above.</p>
+<hr>
+<h2 id="next-steps">Next Steps</h2>
+<ol>
+<li><strong>Deploy Prometheus</strong> on your Kubernetes cluster</li>
+<li><strong>Instrument your ML service</strong> with prediction accuracy metrics</li>
+<li><strong>Set up alerts</strong> for accuracy drops</li>
+<li><strong>Automate training</strong> with CronJobs</li>
+<li><strong>Add staging environment</strong> for model testing</li>
+<li><strong>Monitor</strong> for the first week to catch issues</li>
+</ol>
+<p>After one month, you&rsquo;ll have caught issues that would have been silent for weeks in the old system.</p>
+<hr>
+<h2 id="references--tools">References &amp; Tools</h2>
+<ul>
+<li><strong>Kubernetes CronJob:</strong> <a href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/">https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/</a></li>
+<li><strong>MLflow Model Registry:</strong> <a href="https://mlflow.org/docs/latest/registry.html">https://mlflow.org/docs/latest/registry.html</a></li>
+<li><strong>Prometheus:</strong> <a href="https://prometheus.io/">https://prometheus.io/</a></li>
+<li><strong>ML Monitoring:</strong> Evidently AI, WhyLabs, Arize (enterprise options)</li>
+<li><strong>Feature Stores:</strong> Tecton, Feast, Hopsworks</li>
+</ul>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/index.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/theme.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" OpenBSD CARP Firewalls in Front of a Private Kubernetes Cluster &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="https://ivomarino.com/post/openbsd-carp-k8s-firewall/" />
+    <meta property="og:image" content="https://ivomarino.com/img/openbsd-carp-header.jpg" />
+    <meta property="og:description" content="We run two OpenBSD firewalls in CARP HA mode in front of a private Kubernetes cluster. Sub-second failover, full state sync, and pf rules that load-balance across worker nodes." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-03-25T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="infrastructure-series" />
+    
+    <meta property="og:article:tag" content="networking" />
+    
+    <meta property="og:article:tag" content="infrastructure" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="openbsd" />
+    
+    <meta property="og:article:tag" content="carp" />
+    
+    <meta property="og:article:tag" content="firewall" />
+    
+    <meta property="og:article:tag" content="ha" />
+    
+    <meta property="og:article:tag" content="failover" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     OpenBSD CARP Firewalls in Front of a Private Kubernetes Cluster &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="https://ivomarino.com/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="https://ivomarino.com/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="https://ivomarino.com/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="https://ivomarino.com/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="https://ivomarino.com/post/openbsd-carp-k8s-firewall/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="https://ivomarino.com/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(https://ivomarino.com/img/openbsd-carp-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="https://ivomarino.com/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">OpenBSD CARP Firewalls in Front of a Private Kubernetes Cluster</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-03-25T00:00:00Z">
+            Mar 25, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/infrastructure-series/">#infrastructure-series</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/networking/">#networking</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/infrastructure/">#infrastructure</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/openbsd/">#openbsd</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/carp/">#carp</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/firewall/">#firewall</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/ha/">#ha</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/failover/">#failover</a></span>
+         
+          <span class="post-tag small"><a href="https://ivomarino.com/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <h2 id="the-problem">The Problem</h2>
+<p>We had a Kubernetes cluster running in the cloud, but in a <strong>completely private network</strong> (VPC). Only the firewall nodes expose public IPs to the internet. The cluster needed a stateful front-end that could:</p>
+<ol>
+<li><strong>Handle HA</strong> — a single firewall failing would kill everything</li>
+<li><strong>Forward traffic</strong> to Kubernetes NodePorts without cloud magic</li>
+<li><strong>Survive failover</strong> without dropping established connections</li>
+<li><strong>Load-balance</strong> across multiple worker nodes</li>
+</ol>
+<p>Cloud load balancers (AWS ALB, NLB, etc.) felt like overkill — we&rsquo;d be paying for managed services when we wanted full control over traffic rules and failover behavior. We looked at HAProxy in HA mode (Keepalived), but Keepalived is stateless. Every connection would drop on failover.</p>
+<p>We settled on <strong>OpenBSD running CARP (Common Address Redundancy Protocol)</strong> with <code>pfsync</code> state synchronization. It&rsquo;s been in production for <strong>years</strong> and remains the pragmatic choice for stateful, sub-second failover.</p>
+<p><strong>Status:</strong> Still running, proven stable, no plans to change.</p>
+<h2 id="why-openbsd--carp">Why OpenBSD + CARP</h2>
+<p>OpenBSD&rsquo;s CARP is not a new protocol, but it solves a specific problem well: <strong>stateful, synchronized failover between two firewalls</strong>.</p>
+<p>Here&rsquo;s what makes it different from Keepalived:</p>
+<ul>
+<li><strong>CARP</strong> — handles virtual IP failover (master/backup), with the backup taking over automatically</li>
+<li><strong>pfsync</strong> — synchronizes firewall state (all connections, NAT tables, etc.) in real-time</li>
+<li>Together — when master fails, backup inherits all active connections without dropping a single packet</li>
+</ul>
+<p>The alternative (HAProxy + Keepalived) would require application-level reconnect logic or connection pooling. With stateful firewall sync, TCP connections just keep working.</p>
+<p>Other options we considered and rejected:</p>
+<ul>
+<li><strong>Cisco/Juniper</strong> — overkill, expensive, requires vendor support</li>
+<li><strong>pfSense</strong> — built on OpenBSD, but pricey; OpenBSD itself was free</li>
+<li><strong>Keepalived + HAProxy</strong> — stateless failover, requires app-level reconnect handling</li>
+<li><strong>Cloud load balancers</strong> — not an option for on-prem</li>
+</ul>
+<p>OpenBSD was the only thing that gave us stateful sync without paying enterprise fees.</p>
+<h2 id="the-architecture">The Architecture</h2>
+<p>Two OpenBSD VMs in separate availability zones (for fault isolation).</p>
+<pre tabindex="0"><code>Internet
+   ↓
+[Firewall-Primary] ← CARP Master - public IP
+[Firewall-Backup]  ← CARP Backup - public IP
+   ↓ (both have CARP VIP - public)
+Private Network (VPC)
+   ↓
+[Kubernetes Cluster]
+   ↓
+[Traefik Ingress Controller]
+</code></pre><p><strong>Network Design:</strong></p>
+<ol>
+<li><strong>External interface</strong> — public IP, handles internet traffic</li>
+<li><strong>Internal interface</strong> — private network to K8s cluster</li>
+<li><strong>Dedicated sync network</strong> — high-speed link between firewalls for pfsync (critical for low-latency state sync)</li>
+<li><strong>CARP VIP</strong> (external) — 72.X.X.100, load balancing incoming traffic</li>
+<li><strong>CARP VIP</strong> (internal) — 10.X.X.1, cluster access</li>
+</ol>
+<p>The sync network was crucial. If pfsync packets got queued behind regular traffic, state sync would lag, and failover wouldn&rsquo;t be clean.</p>
+<p><strong>pf Configuration (simplified):</strong></p>
+<pre tabindex="0"><code># CARP VIP for external HTTP/HTTPS traffic
+pass in on egress proto tcp to &lt;vip-public&gt; port { 80, 443 } \
+  rdr-to &lt;worker-pool&gt; port { 80, 443 }
+
+# NAT: all outbound traffic from cluster to public IP
+pass out on egress from &lt;cluster-net&gt; nat-to &lt;vip-public&gt;
+</code></pre><p>The firewall does <strong>simple port forwarding</strong>: traffic on public IPs (72.X.X.100) gets redirected to private IPs in the cluster. Inside the cluster, <strong>Traefik (Kubernetes ingress controller)</strong> handles routing. This separation of concerns is clean:</p>
+<ul>
+<li><strong>pf (firewall):</strong> Public ↔ Private IP translation, HA failover, NAT</li>
+<li><strong>Traefik (cluster):</strong> HTTP routing, TLS termination, rate limiting, path-based routing</li>
+</ul>
+<p>No load balancing logic at the firewall level. The <code>rdr-to</code> pool distributes new connections, but Traefik is what actually routes requests to backend services.</p>
+<h2 id="real-time-failover-demo">Real-Time Failover Demo</h2>
+<p>Here&rsquo;s what happens when the master firewall is shut down mid-connection. Notice: <strong>zero packet loss</strong>.</p>
+<video controls width="100%" style="border-radius:4px">
+  <source src="/video/pf-failover-demo.mp4" type="video/mp4">
+</video>
+<p>The demo shows:</p>
+<ul>
+<li><strong>Before failover:</strong> pings going through master firewall (RTT ~5ms)</li>
+<li><strong>Failover happens:</strong> master goes down, backup takes over in &lt;100ms</li>
+<li><strong>After failover:</strong> pings continue, new RTT shows traffic now goes through backup</li>
+<li><strong>No failures:</strong> not a single ping was dropped</li>
+</ul>
+<p>This works because pfsync keeps the backup&rsquo;s state table synchronized. When the backup becomes master, all existing connections are already in its state table.</p>
+<h2 id="port-forwarding-strategy">Port Forwarding Strategy</h2>
+<p>We forward public ports to private cluster ports:</p>
+<ul>
+<li><strong>80</strong> → cluster port <strong>80</strong> (HTTP)</li>
+<li><strong>443</strong> → cluster port <strong>443</strong> (HTTPS)</li>
+</ul>
+<p>The firewall does simple 1:1 forwarding. Traefik inside the cluster routes requests to backend services.</p>
+<p>This separation is clean: the firewall doesn&rsquo;t care what service is running. It just translates public IPs to private IPs. Traefik handles everything else.</p>
+<h2 id="load-balancing-at-the-firewall-level">Load Balancing at the Firewall Level</h2>
+<p>The pf <code>rdr-to</code> rule includes a pool of backend worker IPs. pf distributes new connections using a hash of source/destination (not pure round-robin).</p>
+<pre tabindex="0"><code class="language-pf" data-lang="pf">rdr-to &lt;worker-pool&gt; port 80
+</code></pre><p>This spreads traffic across workers, but <strong>Traefik does the actual routing</strong>. pf just ensures the connection gets to one worker; Traefik then handles:</p>
+<ul>
+<li>Layer-7 routing (by hostname, path, headers)</li>
+<li>TLS termination</li>
+<li>Service discovery</li>
+</ul>
+<h2 id="traefik-redundancy-and-failover">Traefik Redundancy and Failover</h2>
+<p>Traefik itself runs redundantly across multiple worker nodes. We deploy Traefik with multiple replicas (typically 3+), so if one Traefik pod crashes or a node fails, other Traefik instances immediately take over routing.</p>
+<p>This creates a complete HA stack:</p>
+<ul>
+<li><strong>Firewall layer:</strong> CARP handles public IP failover (OpenBSD VMs)</li>
+<li><strong>Ingress layer:</strong> Traefik replicas handle traffic distribution (Kubernetes)</li>
+<li><strong>Application layer:</strong> App pods run with multiple replicas</li>
+</ul>
+<p>If a single component fails at any layer, the others absorb the traffic. The firewall doesn&rsquo;t know (or care) which Traefik pod handles a request—it just forwards to any worker running Traefik.</p>
+<h2 id="sticky-sessions-with-traefik">Sticky Sessions with Traefik</h2>
+<p>For stateful applications that need session affinity, Traefik uses <strong>sticky session cookies</strong>. Services configured in Kubernetes can enable sticky cookies via annotations:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span>: <span style="color:#ae81ff">v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span>: <span style="color:#ae81ff">Service</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">traefik.ingress.kubernetes.io/service.sticky.cookie</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">traefik.ingress.kubernetes.io/service.sticky.cookie.httponly</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">traefik.ingress.kubernetes.io/service.sticky.cookie.samesite</span>: <span style="color:#e6db74">&#34;none&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">traefik.ingress.kubernetes.io/service.sticky.cookie.secure</span>: <span style="color:#e6db74">&#34;true&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span>: <span style="color:#ae81ff">my-service</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">ports</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#f92672">port</span>: <span style="color:#ae81ff">80</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">selector</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">app</span>: <span style="color:#ae81ff">my-service</span>
+</span></span></code></pre></div><p>Traefik sets a cookie with a session ID. Subsequent requests from the same client automatically route to the same backend pod. No application changes needed.</p>
+<p>So: <strong>pf distributes to workers</strong>, <strong>Traefik distributes to pods</strong> (with session stickiness if needed).</p>
+<h2 id="updating-openbsd-vms-trivial">Updating OpenBSD VMs: Trivial</h2>
+<p>One of the best parts: <strong>updates are dead simple</strong>.</p>
+<p>OpenBSD&rsquo;s <code>syspatch</code> command patches the OS in ~30 seconds. Reboot takes ~1 minute. When the primary firewall reboots:</p>
+<ul>
+<li>CARP automatically fails over to the backup</li>
+<li>pfsync keeps all connection state in sync</li>
+<li>Existing connections continue without interruption</li>
+<li>New connections route through the backup</li>
+</ul>
+<p>Zero downtime. No coordination needed. Just reboot and move on.</p>
+<p>Then update the backup. Done.</p>
+<p>This simplicity is a huge win over cloud load balancers, which often require scheduled maintenance windows or blue-green deployments for updates.</p>
+<h2 id="what-we-learned">What We Learned</h2>
+<p><strong>1. State synchronization is non-negotiable for failover</strong></p>
+<p>Stateless failover (Keepalived) is fine if your application handles reconnects. Most didn&rsquo;t. pfsync solved this by keeping state synchronized, so the backup could take over transparently.</p>
+<p><strong>2. Dedicated sync networks matter</strong></p>
+<p>If pfsync shares bandwidth with data traffic, state sync gets queued and lags. A fast, direct link between firewalls is worth the extra networking.</p>
+<p><strong>3. OpenBSD/pf is simple but powerful</strong></p>
+<p>pf syntax is clearer than iptables. Configuration lives in one file. Rules are easier to audit and modify. We didn&rsquo;t need a GUI — <code>pfctl</code> and a text editor were enough.</p>
+<p><strong>4. CARP works, but requires planning</strong></p>
+<p>CARP VIPs work great, but you need to think about:</p>
+<ul>
+<li>Which interface is the VIP on?</li>
+<li>What&rsquo;s the priority (master vs backup)?</li>
+<li>How fast do you want failover? (advskew tuning)</li>
+<li>Is your sync network fast enough?</li>
+</ul>
+<p>Getting this wrong means either failover doesn&rsquo;t happen, or the master and backup both think they&rsquo;re the master (split-brain).</p>
+<p><strong>5. Load balancing at the firewall has limits</strong></p>
+<p>Round-robin distribution across NodePorts worked fine for HTTP/HTTPS, but it&rsquo;s not session-aware. Sticky sessions had to happen at the application layer (cookies, JSession, etc.) or via Kubernetes ingress rules.</p>
+<h2 id="the-trade-off">The Trade-off</h2>
+<p><strong>What we gave up:</strong></p>
+<ul>
+<li>Automatic scaling (firewall is fixed capacity)</li>
+<li>Cloud flexibility (bound to on-prem hardware)</li>
+<li>SLA guarantees (no vendor support — we own the code)</li>
+<li>Automatic updates (OpenBSD stable releases, manual patching)</li>
+</ul>
+<p><strong>What we gained:</strong></p>
+<ul>
+<li>Full control over traffic rules</li>
+<li>No cloud egress charges</li>
+<li>Stateful failover without dropped connections</li>
+<li>Simplicity (two files: pf.conf and CARP config)</li>
+<li>Cost (free OS, standard hardware)</li>
+</ul>
+<p>For a private cluster serving internal users, this trade-off made sense. For a public SaaS platform, cloud load balancers might be worth the cost.</p>
+<h2 id="would-we-do-it-again">Would We Do It Again?</h2>
+<p><strong>Absolutely.</strong> This setup has been running for years in production. Zero regrets.</p>
+<p>CARP + pfsync is the right tool for <strong>stateful HA failover when you control the infrastructure</strong>. The setup is straightforward, the failover is sub-second, and the operational overhead is minimal. Updating firewalls is easier than updating most managed cloud services.</p>
+<p>The trade-offs are favorable:</p>
+<ul>
+<li>✅ Full control over traffic rules</li>
+<li>✅ No cloud egress charges</li>
+<li>✅ Sub-second stateful failover (unbeatable for connection continuity)</li>
+<li>✅ Simple to operate and update</li>
+<li>❌ You own it (no vendor support)</li>
+<li>❌ Bound to your infrastructure provider&rsquo;s network</li>
+</ul>
+<p>For a private cluster where you already own the infrastructure, OpenBSD CARP is the pragmatic choice. It works. It keeps working. Updates are trivial. Failover is transparent.</p>
+<p><strong>If you&rsquo;re considering this:</strong> You need comfort with:</p>
+<ul>
+<li>Network architecture (VIPs, multicast, ARP)</li>
+<li>Command-line firewall management (pf syntax is learnable)</li>
+<li>Monitoring for split-brain scenarios (rare but possible)</li>
+<li>Testing failover regularly</li>
+</ul>
+<p>If you have those skills and control your own infrastructure, stop paying for cloud load balancers. CARP is simpler and better for your use case.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/index.js"></script>
+    <script type="text/javascript" src="https://ivomarino.com/js/theme.js"></script>
+
+</body>
+</html>
+

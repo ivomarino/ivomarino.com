@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" Production Backup Strategy: Three Layers of Defense &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="http://192.168.160.249:1313/post/production-backup-strategy/" />
+    <meta property="og:image" content="http://192.168.160.249:1313/img/production-backup-header.jpg" />
+    <meta property="og:description" content="Single backup tool doesn&#39;t work at production scale. Learn the three-layer backup architecture combining ZFS snapshots (local fast recovery), Restic backups (offsite immutable), and S3 archives (compliance). Achieves defense-in-depth with 1TB data, point-in-time recovery, and only $50/month cost." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-05-05T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="backup-series" />
+    
+    <meta property="og:article:tag" content="infrastructure" />
+    
+    <meta property="og:article:tag" content="backups" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="zfs" />
+    
+    <meta property="og:article:tag" content="restic" />
+    
+    <meta property="og:article:tag" content="s3" />
+    
+    <meta property="og:article:tag" content="disaster-recovery" />
+    
+    <meta property="og:article:tag" content="compliance" />
+    
+    <meta property="og:article:tag" content="cost-efficiency" />
+    
+    
+
+  <title>
+     Production Backup Strategy: Three Layers of Defense &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="http://192.168.160.249:1313/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="http://192.168.160.249:1313/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="http://192.168.160.249:1313/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="http://192.168.160.249:1313/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="http://192.168.160.249:1313/post/production-backup-strategy/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="http://192.168.160.249:1313/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(http://192.168.160.249:1313/img/production-backup-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="http://192.168.160.249:1313/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">Production Backup Strategy: Three Layers of Defense</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-05-05T00:00:00Z">
+            May 5, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backup-series/">#backup-series</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/infrastructure/">#infrastructure</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backups/">#backups</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/zfs/">#zfs</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/restic/">#restic</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/s3/">#s3</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/disaster-recovery/">#disaster-recovery</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/compliance/">#compliance</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/cost-efficiency/">#cost-efficiency</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>You&rsquo;re managing a production platform with TB-scale data. Database backups, filesystem data, configuration files—everything needs to be protected.</p>
+<p>Single-tool backup approaches fail:</p>
+<ul>
+<li><strong>ZFS snapshots alone:</strong> Fast local recovery, but no offsite copy if the storage fails</li>
+<li><strong>Restic without snapshots:</strong> Everything gets scanned daily (expensive at 1TB)</li>
+<li><strong>S3 backups without local snapshots:</strong> Slow recovery (must download and decompress)</li>
+</ul>
+<p>The answer is all three, working together.</p>
+<h2 id="the-three-layer-architecture">The Three-Layer Architecture</h2>
+<pre tabindex="0"><code>Layer 1: LOCAL SNAPSHOTS          Layer 2: OFFSITE STORAGE         Layer 3: COMPLIANCE
+════════════════════════════════════════════════════════════════════════════════════
+
+Production NAS (FreeBSD)           Offsite rsync.net                S3 Object Storage
+─────────────────────────────────────────────────────────────────────────────────────
+ZFS snapshots (hourly)      →      Receive ZFS datasets      →      Restic snapshots
+  • Automatic retention     →      (with full retention)     →      • 8-11 month retention
+  • Point-in-time recovery →                                 →      • Keep policy
+  • Local to NAS            →                                 →      • Immutable archive
+
+Restic backups (2x daily)
+  • Stage + prod sets
+  • Tag-based exclusions
+  • Retention policy
+
+
+Recovery Path:
+─────────────
+Fast (minutes):    ZFS clone → Mount → Done
+Medium (hours):    Restic restore → Download → Verify
+Slow (compliance): S3 download → Verify → Archive
+</code></pre><h2 id="layer-1-zfs-snapshots-local--offsite">Layer 1: ZFS Snapshots (Local &amp; Offsite)</h2>
+<p><strong>Responsibility:</strong> Fast recovery, hourly point-in-time capability</p>
+<p>Snapshots are created automatically on production NAS systems. zfs-autobackup replicates them hourly to an offsite rsync.net target.</p>
+<p><strong>Real numbers:</strong></p>
+<ul>
+<li>Snapshots created hourly (automatic, background)</li>
+<li>101GB dataset: 47-hour initial sync, then incremental minutes</li>
+<li>Storage: ~500GB offsite (retention of 10+ snapshots)</li>
+<li>Recovery: Clone offsite snapshot, mount on target, done in &lt;5 minutes</li>
+</ul>
+<p><strong>When to use:</strong> &ldquo;I need data from 3 hours ago right now.&rdquo;</p>
+<h2 id="layer-2-restic-backups-offsite-immutable">Layer 2: Restic Backups (Offsite Immutable)</h2>
+<p><strong>Responsibility:</strong> Offsite immutable copy, deduplication, compliance trail</p>
+<p>Restic runs 2x daily on production systems, creating snapshots of:</p>
+<ul>
+<li><code>/etc</code> (system configuration)</li>
+<li><code>/mnt/data</code> (application data)</li>
+<li><code>/mnt/data1</code> (customer databases, sensitive)</li>
+</ul>
+<p>Backups use tag-based exclusions (<code>.nobackup</code>, <code>.resticignore</code> files) to skip non-critical data.</p>
+<p><strong>Retention policy:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">keep-last</span>: <span style="color:#ae81ff">3</span>             <span style="color:#75715e"># Last 3 snapshots always</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">keep-daily</span>: <span style="color:#ae81ff">5</span>            <span style="color:#75715e"># 1 per day for 5 days</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">keep-weekly</span>: <span style="color:#ae81ff">3</span>           <span style="color:#75715e"># 1 per week for 3 weeks</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">keep-monthly</span>: <span style="color:#ae81ff">6</span>          <span style="color:#75715e"># 1 per month for 6 months</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">keep-yearly</span>: <span style="color:#ae81ff">1</span>           <span style="color:#75715e"># 1 per year forever</span>
+</span></span></code></pre></div><p><strong>Real numbers:</strong></p>
+<ul>
+<li>Primary data: ~1TB</li>
+<li>Restic repository (deduplicated): ~100GB</li>
+<li>2x daily backups (stage + prod on different schedules)</li>
+<li>Backup windows: 02:00 UTC (stage), 04:00 UTC (prod)</li>
+<li>CPU: Minimal (deduplication in background)</li>
+</ul>
+<p><strong>When to use:</strong> &ldquo;I need to verify data integrity from last week&rdquo; or &ldquo;restore customer database from yesterday.&rdquo;</p>
+<h2 id="layer-3-s3-archive-long-term-compliance">Layer 3: S3 Archive (Long-Term Compliance)</h2>
+<p><strong>Responsibility:</strong> Geo-distributed archive, immutable, compliance-ready</p>
+<p>Restic snapshots are pushed to S3-compatible object storage via autorestic-rclone:</p>
+<ol>
+<li>Mount S3 buckets locally via rclone FUSE</li>
+<li>Run restic forget/prune (applies retention)</li>
+<li>Automatically unmount</li>
+</ol>
+<p>This runs post-backup once Restic completes locally.</p>
+<p><strong>Buckets:</strong></p>
+<ul>
+<li>8 stage buckets (one per environment)</li>
+<li>3 prod buckets (production, sensitive data, archive)</li>
+<li>Total: ~150GB compressed snapshots</li>
+</ul>
+<p><strong>When to use:</strong> &ldquo;Need to audit what happened 6 months ago&rdquo; or &ldquo;annual compliance archive.&rdquo;</p>
+<h2 id="why-all-three">Why All Three</h2>
+<h3 id="zfs-snapshots">ZFS Snapshots</h3>
+<p>✅ Fastest recovery (local, cloning is instant)
+✅ Point-in-time granularity (hourly)
+✅ Minimal offsite bandwidth (incremental)
+❌ No protection if storage fails (needs backup copy)
+❌ Requires FreeBSD/ZFS knowledge</p>
+<h3 id="restic-backups">Restic Backups</h3>
+<p>✅ Offsite immutable copy (can&rsquo;t be accidentally deleted)
+✅ Deduplication saves space (60%+ savings)
+✅ Point-in-time recovery
+✅ Audit trail (retention policy documented)
+❌ Slower restore (must decompress)
+❌ CPU overhead for deduplication</p>
+<h3 id="s3-archive">S3 Archive</h3>
+<p>✅ Geo-distributed (inherent resilience)
+✅ Long-term retention (1+ years)
+✅ Immutable (compliance requirement)
+✅ Cheap per GB
+❌ Slowest to restore
+❌ No local advantage</p>
+<p><strong>Together:</strong> You have fast recovery (ZFS), offsite protection (Restic), and compliance archive (S3). Defend in depth.</p>
+<h2 id="real-production-deployment">Real Production Deployment</h2>
+<h3 id="storage-capacity">Storage Capacity</h3>
+<ul>
+<li>Primary NAS: ~1TB active data (customer databases + files)</li>
+<li>Offsite storage (rsync.net): ~500GB ZFS datasets + Restic snapshots</li>
+<li>S3 object storage: ~150GB compressed snapshots</li>
+</ul>
+<h3 id="backup-windows">Backup Windows</h3>
+<ul>
+<li>Stage backups: 02:00 UTC (low traffic)</li>
+<li>Prod backups: 04:00 UTC (post-maintenance)</li>
+<li>ZFS snapshots: Hourly (background)</li>
+</ul>
+<h3 id="recovery-time-objectives-rto">Recovery Time Objectives (RTO)</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Time</th>
+<th>Trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ZFS clone</td>
+<td>&lt;5 min</td>
+<td>Need local snapshot</td>
+</tr>
+<tr>
+<td>Restic restore</td>
+<td>30-60 min</td>
+<td>Need offsite data</td>
+</tr>
+<tr>
+<td>S3 restore</td>
+<td>2-4 hours</td>
+<td>Compliance/audit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring">Monitoring</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Check ZFS replication</span>
+</span></span><span style="display:flex;"><span>zfs list -t snapshot -S creation | head -20
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check Restic snapshots</span>
+</span></span><span style="display:flex;"><span>restic snapshots --repo /mnt/restic-prod | tail -5
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check S3 sync status</span>
+</span></span><span style="display:flex;"><span>ls -lah /mnt/restic-prod/
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check logs</span>
+</span></span><span style="display:flex;"><span>tail -100 /var/log/autorestic-prod.log
+</span></span></code></pre></div><h2 id="known-issues--solutions">Known Issues &amp; Solutions</h2>
+<h3 id="issue-1-stuck-backup-locks">Issue 1: Stuck Backup Locks</h3>
+<p><strong>Problem:</strong> autorestic-rclone.sh runs as unprivileged user, can&rsquo;t unmount S3 buckets. Lock file persists, subsequent backups blocked.</p>
+<p><strong>Solution:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Add to sudoers</span>
+</span></span><span style="display:flex;"><span>backup_user ALL<span style="color:#f92672">=(</span>root<span style="color:#f92672">)</span> NOPASSWD: /sbin/umount, /sbin/mount
+</span></span></code></pre></div><p><strong>Lesson:</strong> Automation scripts need escape hatches for edge cases.</p>
+<h3 id="issue-2-zfs-hold-release">Issue 2: ZFS Hold Release</h3>
+<p><strong>Problem:</strong> If transfer fails, ZFS holds prevent cleanup. Orphaned snapshots remain.</p>
+<p><strong>Solution:</strong> Use <code>--destroy-missing</code> in zfs-autobackup to prune orphaned snapshots automatically.</p>
+<h2 id="why-this-matters">Why This Matters</h2>
+<p>This isn&rsquo;t theoretical. These are patterns that work at scale:</p>
+<ol>
+<li><strong>Defense-in-depth:</strong> Each layer protects against different failure modes</li>
+<li><strong>Cost efficiency:</strong> $50/month total vs $500+ for managed backup solutions</li>
+<li><strong>Operational simplicity:</strong> ZFS and Restic are automated; S3 is immutable (can&rsquo;t accidentally delete)</li>
+<li><strong>Compliance-ready:</strong> Retention policies documented, audit trail built-in, geographic distribution</li>
+<li><strong>Recovery tested:</strong> Monthly test restores from S3 (not local) verify procedures work</li>
+</ol>
+<h2 id="operations-checklist">Operations Checklist</h2>
+<ul>
+<li><input disabled="" type="checkbox"> ZFS snapshots created hourly (automated)</li>
+<li><input disabled="" type="checkbox"> Offsite replication running 2x daily (automated)</li>
+<li><input disabled="" type="checkbox"> Restic backups running on schedule (automated)</li>
+<li><input disabled="" type="checkbox"> S3 sync running post-backup (automated)</li>
+<li><input disabled="" type="checkbox"> Weekly: Review backup logs for errors</li>
+<li><input disabled="" type="checkbox"> Monthly: Test restore from S3 (not local)</li>
+<li><input disabled="" type="checkbox"> Quarterly: Full recovery procedure walkthrough</li>
+<li><input disabled="" type="checkbox"> Annually: Audit retention policies</li>
+</ul>
+<h2 id="getting-started">Getting Started</h2>
+<ol>
+<li>
+<p><strong>Set up ZFS:</strong></p>
+<ul>
+<li>Tag datasets: <code>zfs set autobackup:offsite=true zroot/data</code></li>
+<li>Deploy zfs-autobackup via cron</li>
+</ul>
+</li>
+<li>
+<p><strong>Set up Restic:</strong></p>
+<ul>
+<li><code>restic init</code> to create repository</li>
+<li>Configure retention policy in autorestic config</li>
+<li>Deploy backup runner via cron</li>
+</ul>
+</li>
+<li>
+<p><strong>Set up S3 Archive:</strong></p>
+<ul>
+<li>Mount S3 buckets via rclone</li>
+<li>Push Restic snapshots to S3</li>
+<li>Deploy sync script post-backup</li>
+</ul>
+</li>
+</ol>
+<p>Each layer is independent and can be deployed separately, but together they provide complete protection.</p>
+<hr>
+<p><strong>Next:</strong> We&rsquo;ll show how to apply this same pattern to S3 bucket backups (backing up your backups).</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/index.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/theme.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Incremental-Backup on ivomarino.com</title>
+    <link>http://localhost:46569/tags/incremental-backup/</link>
+    <description>Recent content in Incremental-Backup on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Sun, 10 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:46569/tags/incremental-backup/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>S3 Bucket Backups with Restic: Automating Cloud Storage Replication</title>
+      <link>http://localhost:46569/post/s3-bucket-backups/</link>
+      <pubDate>Sun, 10 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/s3-bucket-backups/</guid>
+      <description>S3 buckets aren&amp;rsquo;t backups. Secure them with independent snapshots using rclone FUSE mounting and restic deduplication. 500GB of production buckets compressed to 100GB with 80% savings. Includes automation, configuration, and real operational procedures for 2-3 hour backup windows.</description>
+    </item>
+    <item>
+      <title>ZFS Offsite Backups on FreeBSD: Incremental Replication at Scale</title>
+      <link>http://localhost:46569/post/zfs-offsite-backups/</link>
+      <pubDate>Fri, 01 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/zfs-offsite-backups/</guid>
+      <description>ZFS snapshots are the foundation for efficient backups. Learn how to replicate them to offsite targets at scale using zfs-autobackup, from simple pairs (lab scale) to hub-and-spoke architectures (production). Includes real numbers and deployment patterns for 1TB+ datasets with minute-level incremental backups.</description>
+    </item>
+    <item>
+      <title>XtraBackup &#43; S3: Enterprise Database Backup Strategy</title>
+      <link>http://localhost:46569/post/xtrabackup-s3-enterprise-backups/</link>
+      <pubDate>Wed, 01 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:46569/post/xtrabackup-s3-enterprise-backups/</guid>
+      <description>Database backups at TB scale require incremental backups with intelligent chain management. Learn how XtraBackup + S3 storage with chain-aware retention solves point-in-time recovery without the cost of managed backup solutions. Includes automation patterns used in production.</description>
+    </item>
+  </channel>
+</rss>

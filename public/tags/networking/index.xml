@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Networking on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/networking/</link>
+    <description>Recent content in Networking on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Thu, 23 Apr 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/networking/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Out-of-Band SSH Tunnel Failover: Why Stability Beats Speed</title>
+      <link>https://ivomarino.com/post/2026-04-23-gateway-failover-ssh-tunnels/</link>
+      <pubDate>Thu, 23 Apr 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/2026-04-23-gateway-failover-ssh-tunnels/</guid>
+      <description>Building reliable automatic gateway failover for critical infrastructure recovery access. How naive health checks broke everything, and why a 30-second stable recovery is better than a 5-second flapping failover.</description>
+    </item>
+    <item>
+      <title>OpenBSD CARP Firewalls in Front of a Private Kubernetes Cluster</title>
+      <link>https://ivomarino.com/post/openbsd-carp-k8s-firewall/</link>
+      <pubDate>Wed, 25 Mar 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/openbsd-carp-k8s-firewall/</guid>
+      <description>We run two OpenBSD firewalls in CARP HA mode in front of a private Kubernetes cluster. Sub-second failover, full state sync, and pf rules that load-balance across worker nodes.</description>
+    </item>
+  </channel>
+</rss>

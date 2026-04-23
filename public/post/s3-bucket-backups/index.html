@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en-US" data-theme="light">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('theme');
+        var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', preferred);
+      })();
+    </script>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  	<meta property="og:title" content=" S3 Bucket Backups with Restic: Automating Cloud Storage Replication &middot;  ivomarino.com" />
+  	<meta property="og:site_name" content="ivomarino.com" />
+  	<meta property="og:url" content="http://192.168.160.249:1313/post/s3-bucket-backups/" />
+    <meta property="og:image" content="http://192.168.160.249:1313/img/s3-backup-header.jpg" />
+    <meta property="og:description" content="S3 buckets aren&#39;t backups. Secure them with independent snapshots using rclone FUSE mounting and restic deduplication. 500GB of production buckets compressed to 100GB with 80% savings. Includes automation, configuration, and real operational procedures for 2-3 hour backup windows." />
+
+    
+  	<meta property="og:type" content="article" />
+
+    <meta property="og:article:published_time" content="2026-05-10T00:00:00Z" />
+    <meta property="og:article:author" content="Ivo Marino" />
+
+    
+    <meta property="og:article:tag" content="backup-series" />
+    
+    <meta property="og:article:tag" content="cloud-storage" />
+    
+    <meta property="og:article:tag" content="backups" />
+    
+    <meta property="og:article:tag" content="operations" />
+    
+    <meta property="og:article:tag" content="s3" />
+    
+    <meta property="og:article:tag" content="restic" />
+    
+    <meta property="og:article:tag" content="rclone" />
+    
+    <meta property="og:article:tag" content="incremental-backup" />
+    
+    <meta property="og:article:tag" content="point-in-time-recovery" />
+    
+    <meta property="og:article:tag" content="automation" />
+    
+    
+
+  <title>
+     S3 Bucket Backups with Restic: Automating Cloud Storage Replication &middot;  ivomarino.com
+  </title>
+
+    <meta name="description" content="Senior Platform Engineer / SRE with 15&#43; years building and operating production platforms, specializing in Kubernetes." />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="http://192.168.160.249:1313/images/favicon.ico">
+	  <link rel="apple-touch-icon" href="http://192.168.160.249:1313/images/apple-touch-icon.png" />
+    
+    <link rel="stylesheet" type="text/css" href="http://192.168.160.249:1313/css/screen.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400|Inconsolata" />
+
+
+    
+      
+          <link href="http://192.168.160.249:1313/index.xml" rel="alternate" type="application/rss+xml" title="ivomarino.com" />
+      
+      
+    
+    <meta name="generator" content="Hugo 0.131.0">
+
+    <link rel="canonical" href="http://192.168.160.249:1313/post/s3-bucket-backups/" />
+
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-27494094-1 ', 'auto');
+      ga('send', 'pageview');
+
+    </script>
+    
+</head>
+<body class="nav-closed">
+
+  <div class="nav">
+    <h3 class="nav-title">Menu</h3>
+    <a href="#" class="nav-close">
+        <span class="hidden">Close</span>
+    </a>
+    <ul>
+        
+        
+    </ul>
+
+    
+    <a class="subscribe-button icon-feed" href="http://192.168.160.249:1313/index.xml">Subscribe</a>
+    
+</div>
+<span class="nav-cover"></span>
+
+
+ <div class="site-wrapper">
+
+
+
+<header class="main-header post-head" style="background-image: url(http://192.168.160.249:1313/img/s3-backup-header.jpg) ">
+  <nav class="main-nav overlay clearfix">
+
+<a class="blog-logo" href="http://192.168.160.249:1313/"><span class="icon-home" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://github.com/ivomarino"><span class="icon-github" style="color:white;font-size:1.2em"></span></a>
+      <a class="blog-logo" href="https://linkedin.com/in/ivomarino"><span class="icon-linkedin" style="color:white;font-size:1.2em"></span></a>
+  
+  <a class="menu-button" href="/contact">Contact</a>
+  <a class="menu-button" href="/resume">Resume</a>
+  <a class="menu-button" href="/about">About</a>
+  
+  <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+  <span class="theme-toggle-icon"></span>
+</button>
+
+  </nav>
+</header>
+
+<main class="content" role="main">
+  <article class="post post">
+    <header class="post-header">
+        <h1 class="post-title">S3 Bucket Backups with Restic: Automating Cloud Storage Replication</h1>
+        <section class="post-meta">
+        
+          <time class="post-date" datetime="2026-05-10T00:00:00Z">
+            May 10, 2026
+          </time>
+        
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backup-series/">#backup-series</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/cloud-storage/">#cloud-storage</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/backups/">#backups</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/operations/">#operations</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/s3/">#s3</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/restic/">#restic</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/rclone/">#rclone</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/incremental-backup/">#incremental-backup</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/point-in-time-recovery/">#point-in-time-recovery</a></span>
+         
+          <span class="post-tag small"><a href="http://192.168.160.249:1313/tags/automation/">#automation</a></span>
+         
+        </section>
+    </header>
+    <section class="post-content">
+      <p>You store critical data in S3 buckets at scale:</p>
+<ul>
+<li>Application logs (hundreds of GB daily)</li>
+<li>Database dumps (hourly snapshots)</li>
+<li>Media assets</li>
+<li>Compliance-required data with retention policies</li>
+</ul>
+<p>But S3 is <strong>not</strong> a backup:</p>
+<ul>
+<li>Single point of failure (no independent copy)</li>
+<li>No audit trail if data is accidentally deleted</li>
+<li>Ransomware/compromise = instant data loss</li>
+<li>Bucket policies easy to misconfigure (entire buckets deleted)</li>
+<li>No point-in-time recovery (just current state)</li>
+</ul>
+<p><strong>The challenge:</strong> How do you back up S3 bucket contents to an independent, auditable system without manual operations?</p>
+<h2 id="the-solution-autorestic-rclone">The Solution: autorestic-rclone</h2>
+<p>Three-phase automated workflow:</p>
+<ol>
+<li><strong>Mount</strong> — Use rclone FUSE to expose S3 buckets as local directories</li>
+<li><strong>Backup</strong> — Run restic/autorestic to create snapshots</li>
+<li><strong>Cleanup</strong> — Unmount filesystems, verify success, clean up</li>
+</ol>
+<p>Result: S3 bucket contents have independent, deduplicated, compressed snapshots with point-in-time recovery and full audit trail.</p>
+<h2 id="real-production-implementation">Real Production Implementation</h2>
+<h3 id="the-setup">The Setup</h3>
+<p><strong>Data being backed up:</strong> Multiple S3 buckets across environments</p>
+<ul>
+<li>Production environment: Application backups + system data</li>
+<li>Staging environment: Development/testing data</li>
+<li>Total volume: ~500GB across all buckets</li>
+<li>Daily change: 50-100GB (active logs + new backups)</li>
+</ul>
+<p><strong>Storage backend:</strong> Private S3-compatible object storage</p>
+<ul>
+<li>Separate from source buckets (resilience)</li>
+<li>Encrypted in transit and at rest</li>
+</ul>
+<p><strong>Schedule:</strong></p>
+<ul>
+<li>Daily via cron at 4 AM UTC (off-peak)</li>
+<li>Duration: 2-3 hours (mounting + deduplication + backup)</li>
+<li>Monitoring integrated with health check service</li>
+</ul>
+<h3 id="configuration-pattern">Configuration Pattern</h3>
+<p><strong>rclone config</strong> — S3 bucket connectivity:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-ini" data-lang="ini"><span style="display:flex;"><span><span style="color:#66d9ef">[prod-env]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">type</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">s3</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">provider</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">Other</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">access_key_id</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&lt;key&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">secret_access_key</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&lt;secret&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">endpoint</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">https://&lt;s3-compatible-endpoint&gt;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">[stage-env]</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">type</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">s3</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">provider</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">Other</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">access_key_id</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&lt;key&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">secret_access_key</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">&lt;secret&gt;</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">endpoint</span> <span style="color:#f92672">=</span> <span style="color:#e6db74">https://&lt;s3-compatible-endpoint&gt;</span>
+</span></span></code></pre></div><p><strong>autorestic config</strong> — Backup policy and retention:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">version</span>: <span style="color:#ae81ff">2</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">global</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">forget</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">keep-daily</span>: <span style="color:#ae81ff">30</span>      <span style="color:#75715e"># Keep one backup per day for 30 days</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">keep-weekly</span>: <span style="color:#ae81ff">52</span>     <span style="color:#75715e"># Keep one per week for a year</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">locations</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">prod-env</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">from</span>: <span style="color:#ae81ff">~/mnt-s3/prod-env</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">to</span>: <span style="color:#ae81ff">restic-backend</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forget</span>: <span style="color:#ae81ff">prune      </span> <span style="color:#75715e"># Auto-delete old snapshots</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">stage-env</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">from</span>: <span style="color:#ae81ff">~/mnt-s3/stage-env</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">to</span>: <span style="color:#ae81ff">restic-backend</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">forget</span>: <span style="color:#ae81ff">prune</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">backends</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">restic-backend</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">type</span>: <span style="color:#ae81ff">s3</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">path</span>: <span style="color:#ae81ff">/restic-backups</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#f92672">env</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">AWS_ACCESS_KEY_ID</span>: <span style="color:#ae81ff">&lt;key&gt;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">AWS_SECRET_ACCESS_KEY</span>: <span style="color:#ae81ff">&lt;secret&gt;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">AWS_S3_URL</span>: <span style="color:#ae81ff">https://&lt;s3-compatible-endpoint&gt;</span>
+</span></span></code></pre></div><p><strong>autorestic-rclone config</strong> — Mount point mapping:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Location list</span>
+</span></span><span style="display:flex;"><span>LOCATIONS<span style="color:#f92672">=(</span><span style="color:#e6db74">&#34;prod-env&#34;</span> <span style="color:#e6db74">&#34;stage-env&#34;</span><span style="color:#f92672">)</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Configuration using associative arrays</span>
+</span></span><span style="display:flex;"><span>declare -A CONFIG
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Production environment: Multiple buckets</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;prod-env.remote&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;prod-env&#34;</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;prod-env.base_dir&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;</span>$HOME<span style="color:#e6db74">/mnt-s3/prod-env&#34;</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;prod-env.buckets&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;app-backups system-data metrics&#34;</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;prod-env.mount_dirs&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;backups system metrics&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Staging environment: Multiple buckets</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;stage-env.remote&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;stage-env&#34;</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;stage-env.base_dir&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;</span>$HOME<span style="color:#e6db74">/mnt-s3/stage-env&#34;</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;stage-env.buckets&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;dev-data test-logs cache-data&#34;</span>
+</span></span><span style="display:flex;"><span>CONFIG<span style="color:#f92672">[</span><span style="color:#e6db74">&#34;stage-env.mount_dirs&#34;</span><span style="color:#f92672">]=</span><span style="color:#e6db74">&#34;data logs cache&#34;</span>
+</span></span></code></pre></div><p><strong>Cron schedule:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#ae81ff">0</span> <span style="color:#ae81ff">4</span> * * * keep TZ<span style="color:#f92672">=</span>UTC /usr/local/bin/health-check-run -- <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  /usr/local/bin/autorestic-rclone.sh
+</span></span></code></pre></div><h2 id="how-it-works">How It Works</h2>
+<h3 id="phase-1-mount-via-rclone-fuse">Phase 1: Mount via rclone FUSE</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># For each bucket:</span>
+</span></span><span style="display:flex;"><span>rclone mount &lt;remote&gt;:&lt;bucket&gt; &lt;mount_dir&gt; <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --vfs-cache-mode full <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --vfs-cache-max-age 12h <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --vfs-cache-max-size 16M <span style="color:#ae81ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#ae81ff"></span>  --daemon
+</span></span></code></pre></div><p><strong>Why full VFS caching:</strong></p>
+<ul>
+<li>Restic needs random file access for deduplication (not sequential)</li>
+<li>Full cache downloads everything first = safe, predictable</li>
+<li>12-hour retention = cache survives into next backup cycle</li>
+<li>16MB buffer = handles large files efficiently</li>
+</ul>
+<p><strong>Result:</strong> S3 buckets appear as local <code>/home/keep/mnt-s3/*/</code> directories</p>
+<h3 id="phase-2-backup-via-autorestic">Phase 2: Backup via autorestic</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Run autorestic on all configured locations</span>
+</span></span><span style="display:flex;"><span>autorestic backup -a
+</span></span></code></pre></div><p><strong>What happens:</strong></p>
+<ol>
+<li>Scans all mounted directories (full file tree)</li>
+<li>Creates snapshots with content deduplication</li>
+<li>Applies retention policy (keep-daily 30, keep-weekly 52)</li>
+<li>Compresses with zstd (transparent)</li>
+<li>Uploads to restic backend (incremental only)</li>
+</ol>
+<p><strong>Deduplication impact:</strong></p>
+<ul>
+<li>S3 logs have high repetition (same patterns)</li>
+<li>Typical savings: 60% reduction in storage</li>
+<li>Compression adds another 40% savings</li>
+<li>Final result: 500GB S3 → ~100GB restic repository</li>
+</ul>
+<h3 id="phase-3-cleanup--verification">Phase 3: Cleanup &amp; Verification</h3>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Unmount all filesystems</span>
+</span></span><span style="display:flex;"><span>fusermount -u /home/keep/mnt-s3/*
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Kill rclone daemon</span>
+</span></span><span style="display:flex;"><span>pkill -f <span style="color:#e6db74">&#34;rclone mount&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Verify success and report</span>
+</span></span><span style="display:flex;"><span>echo <span style="color:#e6db74">&#34;Backup completed successfully&#34;</span> | send-alert
+</span></span></code></pre></div><p><strong>Safety checks:</strong></p>
+<ul>
+<li>Verify backup succeeded before unmounting</li>
+<li>Log all operations (success and failure)</li>
+<li>Alert system on any failures (immediate notification)</li>
+</ul>
+<h2 id="real-numbers">Real Numbers</h2>
+<h3 id="backup-cycle">Backup Cycle</h3>
+<ul>
+<li>Mount time: 10-15 minutes (S3 metadata fetching)</li>
+<li>Restic backup: 60-120 minutes (depends on deduplication work)</li>
+<li>Unmount &amp; cleanup: 5 minutes</li>
+<li><strong>Total window: 2-3 hours</strong></li>
+</ul>
+<h3 id="network-bandwidth">Network Bandwidth</h3>
+<ul>
+<li>rclone mount: 5-20 MB/s (metadata fetch)</li>
+<li>restic backup: 2-5 MB/s (incremental)</li>
+<li><strong>Peak: ~30-50 Mbps</strong> (within typical links)</li>
+</ul>
+<h3 id="storage-efficiency">Storage Efficiency</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source S3 buckets</td>
+<td>500GB</td>
+</tr>
+<tr>
+<td>Restic after dedup</td>
+<td>100GB</td>
+</tr>
+<tr>
+<td>Compression ratio</td>
+<td>80% savings</td>
+</tr>
+<tr>
+<td>Daily incremental</td>
+<td>10-20MB</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why-this-scales">Why This Scales</h2>
+<p>ZFS snapshots scale with change rate, restic backups scale with <strong>deduplication work</strong>, not total data size:</p>
+<ul>
+<li>100GB at 5% daily change = 2-3 hour backup</li>
+<li>1TB at 5% daily change = 2-3 hour backup (same)</li>
+<li>10TB at 5% daily change = 2-3 hour backup (still same)</li>
+</ul>
+<p>The deduplication phase dominates, proportional to <strong>what changed</strong>, not total data.</p>
+<h2 id="operational-procedures">Operational Procedures</h2>
+<p><strong>Check backup status:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># View recent backup logs</span>
+</span></span><span style="display:flex;"><span>tail -50 /var/log/autorestic-backup.log
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># List available recovery points</span>
+</span></span><span style="display:flex;"><span>autorestic exec -- snapshots
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Show backup storage usage</span>
+</span></span><span style="display:flex;"><span>autorestic exec -- stats
+</span></span></code></pre></div><p><strong>Manual trigger (don&rsquo;t wait for cron):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Run backup immediately</span>
+</span></span><span style="display:flex;"><span>sudo -u keep /usr/local/bin/autorestic-rclone.sh
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Preview what would be backed up (safe)</span>
+</span></span><span style="display:flex;"><span>sudo -u keep /usr/local/bin/autorestic-rclone.sh --dry-run
+</span></span></code></pre></div><p><strong>Recovery procedure:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Find the snapshot you need</span>
+</span></span><span style="display:flex;"><span>autorestic exec -- snapshots
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Restore specific snapshot</span>
+</span></span><span style="display:flex;"><span>autorestic exec -- restore -s &lt;snapshot-id&gt; -t /tmp/restore
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Verify restored data</span>
+</span></span><span style="display:flex;"><span>ls -lah /tmp/restore
+</span></span><span style="display:flex;"><span>file /tmp/restore/*
+</span></span></code></pre></div><h2 id="known-issues--solutions">Known Issues &amp; Solutions</h2>
+<h3 id="issue-1-mount-timeouts">Issue 1: Mount Timeouts</h3>
+<p><strong>Problem:</strong> rclone mount stalls on slow/distant S3 connections, backup times out.</p>
+<p><strong>Solution:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Add timeout wrapper</span>
+</span></span><span style="display:flex;"><span>timeout <span style="color:#ae81ff">600</span> rclone mount ... --daemon
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> $? -ne <span style="color:#ae81ff">0</span> <span style="color:#f92672">]</span>; <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  pkill -f <span style="color:#e6db74">&#34;rclone mount&#34;</span>
+</span></span><span style="display:flex;"><span>  sleep <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># Retry with backoff</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span></code></pre></div><h3 id="issue-2-deduplication-cpu-overhead">Issue 2: Deduplication CPU Overhead</h3>
+<p><strong>Problem:</strong> Restic&rsquo;s deduplication checking is CPU-intensive on 500GB+, backup takes 3+ hours.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Filter non-critical data (exclude temp files, caches)</li>
+<li>Pre-filter in autorestic: <code>--ignore-*</code> patterns</li>
+<li>Schedule during off-peak hours (CPU available)</li>
+</ul>
+<h3 id="issue-3-concurrent-bucket-mounts">Issue 3: Concurrent Bucket Mounts</h3>
+<p><strong>Problem:</strong> Mounting many buckets simultaneously exhausts S3 rate limits.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Mount sequentially (one location at a time)</li>
+<li>Stagger different environments across hours</li>
+<li>Use rclone connection pooling settings</li>
+</ul>
+<h2 id="monitoring">Monitoring</h2>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#75715e"># Health check integration (runs backup + monitors)</span>
+</span></span><span style="display:flex;"><span>health-check-run -- /usr/local/bin/autorestic-rclone.sh
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Check if backup is running</span>
+</span></span><span style="display:flex;"><span>ps aux | grep autorestic
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Monitor S3 performance</span>
+</span></span><span style="display:flex;"><span>rclone ls s3:bucket-name | wc -l
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># Verify deduplication is working</span>
+</span></span><span style="display:flex;"><span>autorestic exec -- stats
+</span></span></code></pre></div><h2 id="why-this-matters">Why This Matters</h2>
+<ol>
+<li><strong>Independent backup:</strong> S3 data has its own recovery point (not dependent on S3)</li>
+<li><strong>Audit trail:</strong> Restic snapshots show exactly what was backed up and when</li>
+<li><strong>Efficient storage:</strong> Deduplication + compression = 1/5 storage cost</li>
+<li><strong>Automated policy:</strong> Retention enforced by software (no manual deletion)</li>
+<li><strong>Point-in-time recovery:</strong> Can restore to any snapshot date (30 daily + 52 weekly)</li>
+<li><strong>Cost efficiency:</strong> Self-hosted restic backend cheaper than AWS Backup or Commvault</li>
+</ol>
+<h2 id="getting-started">Getting Started</h2>
+<ol>
+<li>Install rclone and autorestic</li>
+<li>Configure S3 connectivity (rclone)</li>
+<li>Configure backup policy (autorestic)</li>
+<li>Deploy mount script + cron job</li>
+<li>Test recovery from actual S3 (not local)</li>
+</ol>
+<p>The key insight: <strong>S3 is not a backup. Back it up independently with deduplicated snapshots.</strong></p>
+<hr>
+<p><strong>GitHub Reference:</strong> <a href="https://github.com/floadsio/syseng/tree/main/autorestic-rclone">floads/syseng — autorestic-rclone</a></p>
+<p>This completes the backup infrastructure series: databases → infrastructure → cloud storage → complete strategy.</p>
+
+    </section>
+  </article>
+</main>
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="">ivomarino.com</a> All rights reserved - 2026</section>
+        
+        <section class="poweredby">Proudly generated by <a class="icon-hugo" href="http://gohugo.io">HUGO</a>, with <a class="icon-theme" href="https://github.com/vjeantet/hugo-theme-casper">Casper</a> theme</section>
+        
+    </footer>
+    </div>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/jquery.fitvids.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/index.js"></script>
+    <script type="text/javascript" src="http://192.168.160.249:1313/js/theme.js"></script>
+
+</body>
+</html>
+

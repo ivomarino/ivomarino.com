@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Lessons on ivomarino.com</title>
+    <link>https://ivomarino.com/tags/lessons/</link>
+    <description>Recent content in Lessons on ivomarino.com</description>
+    <generator>Hugo</generator>
+    <language>en-US</language>
+    <copyright>All rights reserved - 2026</copyright>
+    <lastBuildDate>Thu, 01 Jan 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://ivomarino.com/tags/lessons/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>2026 Relaunch: Infrastructure Lessons from 10&#43; Years Running Production</title>
+      <link>https://ivomarino.com/post/relaunch/</link>
+      <pubDate>Thu, 01 Jan 2026 00:00:00 +0000</pubDate>
+      <guid>https://ivomarino.com/post/relaunch/</guid>
+      <description>Relaunching with a focus on pragmatic infrastructure: backup strategies, Kubernetes autoscaling, and lessons from 10+ years of production operations.</description>
+    </item>
+  </channel>
+</rss>
