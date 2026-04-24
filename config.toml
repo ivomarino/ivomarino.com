@@ -16,7 +16,7 @@ summaryLength = 150
   bio = "Senior Platform Engineer / SRE with 15+ years building and operating production platforms, specializing in Kubernetes. Founder of Floads GmbH."
 
   # logo = "images/logo.png"
-  rybbitSiteId = "b002b08656de"
+  umamiWebsiteId = "40ee9ec2-badc-431f-a8ea-9f5c5e8ea093"
 
   # Optional RSS-Link, if not provided it defaults to the standard index.xml
   githubName = "ivomarino"

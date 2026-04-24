@@ -61,8 +61,8 @@
 
     <link rel="canonical" href="{{ .Permalink }}" />
 
-    {{with .Site.Params.rybbitSiteId}}
-    <script src="https://app.rybbit.io/api/script.js" data-site-id="{{.}}" defer></script>
+    {{with .Site.Params.umamiWebsiteId}}
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="{{.}}"></script>
     {{end}}
 </head>
 <body class="nav-closed">
