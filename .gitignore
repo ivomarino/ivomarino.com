@@ -1,0 +1,7 @@
+# Build output. public/ was COMMITTED until 2026-08-08, which is how five posts
+# marked draft = true came to be publicly readable: Hugo skips drafts, so it never
+# regenerated those pages — and never removed the stale HTML either. Netlify then
+# published what was sitting in the directory. See board AMUX-196.
+/public/
+/resources/
+.hugo_build.lock

@@ -116,12 +116,26 @@ Before publishing (setting `draft = false`), verify:
 
 ## Deployment
 
-**Hosting:** Netlify  
-**Branch:** main (auto-deploys on push)  
-**Build Command:** `hugo -D` (from netlify.toml)  
-**Build Output:** `public/`
+**Hosting:** Netlify
+**Branch:** **`master`** — not `main` (auto-deploys on push)
+**Build Command:** `hugo --gc --minify --cleanDestinationDir` (from netlify.toml)
+**Build Output:** `public/` — **generated, never committed**
 
-No manual deployment needed—push to main and Netlify handles the rest.
+No manual deployment needed — push to `master` and Netlify handles the rest.
+
+> [!WARNING]
+> Two things here were wrong until 2026-08-08 and both had consequences:
+>
+> **The branch is `master`.** This file said `main`. Netlify watches the default branch, so pushing
+> a `main` deploys nothing *and reports no error* — the change silently never goes live.
+>
+> **The build command is not `hugo -D`.** `-D` builds **drafts**, which would publish every
+> `draft = true` post on the site. The real command has never included it.
+>
+> **`public/` must stay untracked.** It was committed until 2026-08-08, and that is how five draft
+> posts became publicly readable: Hugo skips drafts, so it never regenerated their pages — and never
+> removed the previously-built HTML sitting in `public/` either, which Netlify then deployed.
+> `--cleanDestinationDir` now removes anything a build did not produce. Board AMUX-196.
 
 ---
 

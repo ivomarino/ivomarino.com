@@ -1,6 +1,10 @@
 [build]
 publish = "public"
-command = "hugo --gc --minify"
+# --cleanDestinationDir removes anything in public/ this build did not produce.
+# Without it, Hugo SKIPS drafts and therefore never regenerates or removes their
+# previously-built HTML, so stale pages in the publish directory get deployed. That
+# is how five draft posts stayed publicly readable from 2026-04-23. Board AMUX-196.
+command = "hugo --gc --minify --cleanDestinationDir"
 
 [context.production.environment]
 HUGO_VERSION = "0.111.3"
@@ -8,20 +12,20 @@ HUGO_ENV = "production"
 HUGO_ENABLEGITINFO = "true"
 
 [context.split1]
-command = "hugo --gc --minify --enableGitInfo"
+command = "hugo --gc --minify --enableGitInfo --cleanDestinationDir"
 
 [context.split1.environment]
 HUGO_VERSION = "0.111.3"
 HUGO_ENV = "production"
 
 [context.deploy-preview]
-command = "hugo --gc --minify --buildFuture -b $DEPLOY_PRIME_URL"
+command = "hugo --gc --minify --buildFuture -b $DEPLOY_PRIME_URL --cleanDestinationDir"
 
 [context.deploy-preview.environment]
 HUGO_VERSION = "0.111.3"
 
 [context.branch-deploy]
-command = "hugo --gc --minify -b $DEPLOY_PRIME_URL"
+command = "hugo --gc --minify -b $DEPLOY_PRIME_URL --cleanDestinationDir"
 
 [context.branch-deploy.environment]
 HUGO_VERSION = "0.111.3"
