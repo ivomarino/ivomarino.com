@@ -117,17 +117,24 @@ Before publishing (setting `draft = false`), verify:
 ## Deployment
 
 **Hosting:** Netlify
-**Branch:** **`master`** — not `main` (auto-deploys on push)
+**Branch:** **`main`** — renamed from `master` on 2026-08-19 (auto-deploys on push)
 **Build Command:** `hugo --gc --minify --cleanDestinationDir` (from netlify.toml)
 **Build Output:** `public/` — **generated, never committed**
 
-No manual deployment needed — push to `master` and Netlify handles the rest.
+No manual deployment needed — push to `main` and Netlify handles the rest.
 
 > [!WARNING]
 > Two things here were wrong until 2026-08-08 and both had consequences:
 >
-> **The branch is `master`.** This file said `main`. Netlify watches the default branch, so pushing
-> a `main` deploys nothing *and reports no error* — the change silently never goes live.
+> **The branch WAS `master`, and this file used to say `main`.** Netlify watches the default branch,
+> so the mismatch deployed nothing *and reported no error*. **Resolved 2026-08-19 by renaming the
+> branch to `main`** across local, GitHub default and Netlify, so the two now agree and the trap is
+> gone. Kept here because the failure mode — a silent no-deploy — is worth recognising anywhere else.
+>
+> ⚠️ **Repointing Netlify needs the FULL `repo` object.** PATCHing
+> `{"build_settings":{"repo_branch":"main"}}` returned 200 and echoed back `master`: accepted,
+> ignored, no error. It also carries **`allowed_branches`**, which was still `["master"]` after the
+> first attempt and is the easiest field to miss.
 >
 > **The build command is not `hugo -D`.** `-D` builds **drafts**, which would publish every
 > `draft = true` post on the site. The real command has never included it.
