@@ -8,7 +8,7 @@ slug = "resume"
 title = "Resume"
 +++
 
-Senior Platform Engineer / SRE with 25+ years building and operating production platforms, specializing in Kubernetes across multi-cloud environments for enterprise and SaaS workloads. Specialised in Kubernetes (EKS, K3s, multi-cluster), GitOps (ArgoCD), and Infrastructure as Code (Terraform, Ansible) across AWS, Azure, and GCP.
+Senior Platform Engineer / SRE with 25+ years building and operating production platforms, specializing in Kubernetes across multi-cloud environments for enterprise and SaaS workloads. Currently building the GPU inference infrastructure behind a production AI platform. Specialised in Kubernetes (EKS, K3s, multi-cluster), GitOps (ArgoCD), and Infrastructure as Code (Terraform, Ansible) across AWS, Azure, and GCP.
 
 Delivered production-grade platforms for Swiss enterprise customers including Allianz Technology, NTT, REWE, Flow Swiss, and LerNetz+ AG. Focused on reliability, scalability, cost-efficient platform design, and improving developer experience.
 
@@ -17,6 +17,13 @@ Fluent in German (native), Italian (native), and English. Founder of [Floads Gmb
 ---
 
 ## Work Experience
+
+### Senior Infrastructure Engineer — AI Platform (contract)
+##### 2026 - present
+
+Building the GPU inference infrastructure behind a production AI video platform. Migrating GPU-backed model serving (NVIDIA Triton) from AWS ECS to multi-region EKS, including Karpenter GPU node pools on Bottlerocket and rollout strategies for single- and multi-model inference services.
+
+Provisioned greenfield multi-region EKS clusters with Terraform, including a dedicated MLOps cluster, and extended the in-house self-service GitOps delivery platform (Helm, ArgoCD) used to ship inference services from development to production. Built multi-region container image distribution using ECR pull-through cache and cross-region replication.
 
 ### Founder & Senior Platform Engineer, [Floads GmbH](https://floads.io)
 ##### 2019 - present
